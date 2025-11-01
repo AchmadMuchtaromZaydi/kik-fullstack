@@ -1,0 +1,125 @@
+/* App global styles */
+
+:root{
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 72px;
+  --primary: #007bff;
+  --muted: #6c757d;
+}
+
+/* Layout helpers */
+.wrapper { min-height: calc(100vh - 56px); }
+.main-content { min-height: calc(100vh - 56px); background: #f8f9fa; padding-top: .75rem; }
+
+/* Topbar / profile */
+.topbar { height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; }
+.profile-sm { display: flex; align-items: center; gap: .5rem; }
+.profile-sm img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+
+/* Card / table container */
+.table-responsive { background: #fff; padding: 1rem; border-radius: .35rem; box-shadow: 0 0 0 1px rgba(0,0,0,0.02); }
+
+/* Action column / button styles */
+.btn-icon {
+    padding: .35rem .45rem;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-icon .fa { font-size: 0.9rem; }
+td .btn { line-height: 1; }
+.table td { vertical-align: middle; }
+
+/* Sidebar styles */
+aside.sidebar {
+    width: var(--sidebar-width);
+    background: #fff;
+    border-right: 1px solid #e6e6e6;
+    transition: width .2s;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+aside.sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+.sidebar .nav-link {
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .55rem 1rem;
+    transition: background .15s, color .15s;
+}
+.sidebar .nav-link .icon {
+    width: 28px;
+    text-align: center;
+    font-size: 1.05rem;
+    color: #6c757d;
+}
+.sidebar .nav-link .label { line-height: 1; }
+
+.sidebar .nav-link.active,
+.sidebar .nav-link:hover {
+    background: rgba(0, 123, 255, .06);
+    color: #0069d9;
+    border-radius: .375rem;
+}
+
+/* Profile block in sidebar */
+.sidebar .profile {
+    padding: .85rem 1rem;
+    display: flex;
+    gap: .75rem;
+    align-items: center;
+    border-bottom: 1px solid #f0f0f0;
+}
+.sidebar .profile img {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #f1f3f5;
+}
+
+/* Sections / footer */
+.sidebar .section-title {
+    font-size: .72rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: .6rem 1rem;
+    letter-spacing: .4px;
+}
+.sidebar .badge-sm { font-size: .65rem; padding: .2rem .45rem; }
+.sidebar-footer { margin-top: auto; padding: .75rem 1rem; border-top: 1px solid #f0f0f0; }
+
+/* Responsive behaviour */
+@media (max-width:768px) {
+    aside.sidebar {
+        position: fixed;
+        left: -320px;
+        z-index: 1050;
+        height: 100vh;
+    }
+    aside.sidebar.show { left: 0; }
+}
+
+/* Small helpers */
+.text-muted.small { font-size: .85rem; }
+
+/* Header sticky */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 1040; /* above content but below modals */
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+
+/* ensure header has explicit height consistent with layout */
+header .topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+}
