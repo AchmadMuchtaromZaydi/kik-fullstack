@@ -1,35 +1,35 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold text-primary" href="{{ url('/') }}">
-            <img src="{{ asset('assets/ar-logo.png') }}" alt="Logo" width="30" height="30" class="me-2">
-            SeniCards
-        </a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
+<header class="mobile-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <button class="btn btn-light btn-sm" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
         </button>
-
-        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-            <ul class="navbar-nav">
-                @auth
-                    <li class="nav-item">
-                        <a href="{{ route('admin.dashboard') }}" class="nav-link">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-danger ms-2">Logout</button>
-                        </form>
-                    </li>
-                @else
-                    <li class="nav-item">
-                        <a href="{{ route('login') }}" class="nav-link">Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('register') }}" class="btn btn-primary ms-2">Daftar</a>
-                    </li>
-                @endauth
+        <a class="navbar-brand text-white" href="{{ route('home') }}">
+            @if (Auth::user()->role === 'admin')
+                Dashboard Admin
+            @else
+                Dashboard User
+            @endif
+        </a>
+        <div class="dropdown">
+            <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-user"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><span class="dropdown-item-text">Hi, {{ Auth::user()->name }}</span></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#"
+                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
-</nav>
+</header>
+
+<form id="logout-form" action="{{ route('auth.logout') }}" method="POST" style="display: none;">
+    @csrf
+</form>

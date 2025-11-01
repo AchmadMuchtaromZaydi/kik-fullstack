@@ -1,56 +1,53 @@
-@extends('layouts.admin')
+@extends('layouts.app')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">Dashboard Admin</h1>
-    </div>
-
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <div class="card text-white bg-primary h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Total Anggota</h5>
-                    <p class="card-text display-4">{{ $totalAnggota }}</p>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box">
+                    <h4 class="page-title">Dashboard Admin</h4>
                 </div>
-            </div>
-        </div>
 
-        <div class="col-md-4 mb-3">
-            <div class="card text-white bg-success h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Total Organisasi</h5>
-                    <p class="card-text display-4">{{ $totalOrganisasi }}</p>
-                </div>
-            </div>
-        </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Selamat Datang, {{ Auth::user()->name }}!</h5>
+                        <p class="card-text">Anda login sebagai <strong>Administrator</strong>.</p>
 
-        <div class="col-md-4 mb-3">
-            <div class="card text-white bg-info h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Total Kesenian</h5>
-                    <p class="card-text display-4">{{ $totalKesenian }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card border-secondary">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0">Aktivitas Terbaru</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group">
-                        @foreach ($aktivitasTerbaru as $aktivitas)
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>{{ $aktivitas['nama'] }}</strong> - {{ $aktivitas['aksi'] }}
+                        <div class="row mt-4">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <h5>Data Kesenian</h5>
+                                        <p>Kelola data kesenian</p>
+                                    </div>
                                 </div>
-                                <span class="badge bg-primary rounded-pill">{{ $aktivitas['tanggal'] }}</span>
-                            </li>
-                        @endforeach
-                    </ul>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <h5>Jenis Kesenian</h5>
+                                        <p>Kelola jenis kesenian</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body">
+                                        <h5>Data Users</h5>
+                                        <p>Kelola pengguna sistem</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body">
+                                        <h5>Laporan</h5>
+                                        <p>Lihat laporan sistem</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
