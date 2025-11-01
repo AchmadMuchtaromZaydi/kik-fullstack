@@ -2,7 +2,8 @@
 <html>
 
 <head>
-    <title>{{ $emailData['subject'] }}</title>
+    <title>{{ $subject }}</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -52,12 +53,12 @@
         </div>
 
         <div class="content">
-            <h2>Halo {{ $emailData['recipient_name'] }},</h2>
+            <h2>Halo {{ $recipient_name }},</h2>
 
-            <p>{{ $emailData['message'] }}</p>
+            <p>{{ $pesan }}</p>
 
             <div class="code">
-                {{ $emailData['code'] }}
+                {{ $code }}
             </div>
 
             <p>Masukkan kode di atas pada halaman verifikasi untuk mengaktifkan akun Anda.</p>

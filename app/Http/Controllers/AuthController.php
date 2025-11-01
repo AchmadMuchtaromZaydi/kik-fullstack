@@ -124,9 +124,25 @@ class AuthController extends Controller
             'code_verified' => $verificationCode
         ]);
 
-        // Kirim email verifikasi
-        $this->sendVerificationEmail($user, $verificationCode);
+        // --- REKOMENDASI PERBAIKAN DIMULAI DI SINI ---
 
+        // Kirim email verifikasi dan tangkap statusnya
+        $emailSent = $this->sendVerificationEmail($user, $verificationCode);
+
+        // Periksa apakah email berhasil terkirim
+        if (!$emailSent) {
+            // Jika gagal, hapus user yang baru dibuat agar mereka bisa mendaftar lagi
+            $user->delete();
+
+            // Kembalikan dengan pesan error
+            return back()->withErrors([
+                'email' => 'Pendaftaran gagal. Kami tidak dapat mengirim email verifikasi saat ini. Silakan coba lagi nanti.'
+            ])->withInput();
+        }
+
+        // --- REKOMENDASI PERBAIKAN SELESAI ---
+
+        // Jika email berhasil terkirim, baru lanjutkan
         return redirect()->route('auth.verify')->with([
             'success' => 'Pendaftaran Berhasil, Silahkan cek email anda untuk verifikasi akun!',
             'email' => $user->email
@@ -226,7 +242,7 @@ class AuthController extends Controller
                 'subject' => 'Verifikasi Email - Kartu Induk Kesenian Banyuwangi',
                 'recipient' => $user->email,
                 'recipient_name' => $user->name,
-                'message' => 'Gunakan kode verifikasi berikut untuk mengaktifkan akun Anda:',
+                'pesan' => 'Gunakan kode verifikasi berikut untuk mengaktifkan akun Anda:',
                 'code' => $code
             ];
 
