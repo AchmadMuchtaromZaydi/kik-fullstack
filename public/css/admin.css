@@ -1,0 +1,12 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f8f9fa;
+}
+
+#sidebar-wrapper {
+  height: 100vh;
+}
+
+.list-group-item:hover {
+  background-color: #495057 !important;
+}
