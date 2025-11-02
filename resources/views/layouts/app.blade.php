@@ -1,189 +1,159 @@
+{{-- resources/views/layouts/app.blade.php --}}
 <!DOCTYPE html>
 <html lang="id">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kartu Induk Kesenian</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+    <title>@yield('title', 'KIK - Sistem Kesenian')</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        :root {
-            --blue: #1386b0;
-            --white: #ffffff;
-        }
-
+        /* Mencegah scroll horizontal di mobile */
         body {
-            font-family: 'Work Sans', sans-serif;
-            margin: 0;
-            padding: 0;
+            overflow-x: hidden;
             background-color: #f8f9fa;
         }
 
-        /* Layout untuk user yang login */
-        .app-layout {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Sidebar di sebelah kiri */
-        .sidebar-container {
-            width: 250px;
-            min-height: 100vh;
-            background-color: #1386b0;
-            position: fixed;
-            left: 0;
-            top: 0;
-            z-index: 1000;
-            transition: all 0.3s;
-        }
-
-        /* Main content */
+        /* * CSS UTAMA UNTUK LAYOUT BARU */
         .main-content {
-            margin-left: 250px;
-            flex: 1;
-            transition: all 0.3s;
-            min-height: 100vh;
-            background-color: #f8f9fa;
+            padding-top: 70px;
+            transition: margin-left 0.3s ease-in-out;
         }
 
-        /* Header mobile */
-        .mobile-header {
-            display: none;
-            background-color: #1386b0;
-            padding: 1rem;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 999;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .sidebar-container {
-                transform: translateX(-100%);
-            }
-
-            .sidebar-container.show {
-                transform: translateX(0);
-            }
-
+        @media (min-width: 992px) {
             .main-content {
-                margin-left: 0;
+                margin-left: 280px;
             }
 
-            .mobile-header {
-                display: block;
+            .sidebar.offcanvas-lg {
+                width: 280px;
+                transform: none !important;
+                visibility: visible !important;
+                position: fixed;
+                top: 70px;
+                bottom: 0;
+                z-index: 1020;
             }
         }
 
-        /* Overlay untuk mobile */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 998;
+        /* --- Mempercantik UI Sidebar (TEMA TERANG) --- */
+        .sidebar {
+            background-color: #ffffff;
+            border-right: 1px solid #dee2e6;
         }
 
-        .sidebar-overlay.show {
-            display: block;
+        .sidebar .nav-link {
+            color: #34495e;
+            padding: 12px 16px;
+            margin: 4px 0;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-weight: 500;
         }
 
-        /* Content padding untuk kompensasi header mobile */
-        .content-wrapper {
-            padding: 20px;
-            margin-top: 0;
+        .sidebar .nav-link .fas {
+            width: 20px;
+            margin-right: 10px;
+            text-align: center;
         }
 
-        @media (max-width: 768px) {
-            .content-wrapper {
-                margin-top: 70px;
-            }
+        /* Hover effect */
+        .sidebar .nav-link:hover {
+            color: #0d6efd;
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+
+        /* Link aktif */
+        .sidebar .nav-link.active {
+            color: #ffffff;
+            background-color: #0d6efd;
+            font-weight: 600;
+        }
+
+        /* Header sidebar mobile */
+        .sidebar .sidebar-header {
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        /* * STYLE UNTUK CARD & COMPONENT LAIN */
+        .stat-card {
+            border-radius: 10px;
+            transition: transform 0.3s;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
         }
     </style>
-    @stack('styles')
 </head>
 
 <body>
-    @auth
-        <!-- Include Mobile Header -->
-        @include('layouts.partials.header')
 
-        <!-- Sidebar Overlay untuk Mobile -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    {{-- Memuat Header --}}
+    @include('layouts.partials.header')
 
-        <!-- Sidebar Container -->
-        <div class="sidebar-container" id="sidebar">
-            @include('layouts.partials.sidebar')
-        </div>
+    {{-- Memuat Sidebar --}}
+    @include('layouts.partials.sidebar')
 
-        <!-- Main Content -->
-        <div class="main-content" id="mainContent">
-            <div class="content-wrapper">
-                @yield('content')
-            </div>
-        </div>
-
-        <script>
-            function toggleSidebar() {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.getElementById('sidebarOverlay');
-                const mainContent = document.getElementById('mainContent');
-
-                sidebar.classList.toggle('show');
-                overlay.classList.toggle('show');
-
-                if (window.innerWidth <= 768) {
-                    if (sidebar.classList.contains('show')) {
-                        document.body.style.overflow = 'hidden';
-                    } else {
-                        document.body.style.overflow = 'auto';
-                    }
-                }
-            }
-
-            // Close sidebar when clicking on a link in mobile view
-            document.addEventListener('DOMContentLoaded', function() {
-                const sidebarLinks = document.querySelectorAll('.sidebar .nav-link');
-                sidebarLinks.forEach(link => {
-                    link.addEventListener('click', function() {
-                        if (window.innerWidth <= 768) {
-                            toggleSidebar();
-                        }
-                    });
-                });
-            });
-
-            // Handle window resize
-            window.addEventListener('resize', function() {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.getElementById('sidebarOverlay');
-
-                if (window.innerWidth > 768) {
-                    sidebar.classList.remove('show');
-                    overlay.classList.remove('show');
-                    document.body.style.overflow = 'auto';
-                }
-            });
-        </script>
-    @else
-        <!-- Content untuk guest (belum login) -->
-        <main>
+    {{-- Konten Utama --}}
+    <div class="main-content d-flex flex-column min-vh-100">
+        <main class="p-3 p-md-4 flex-grow-1">
             @yield('content')
         </main>
+
+        {{-- Memuat Footer --}}
+        @include('layouts.partials.footer')
+    </div>
+
+    {{-- Modal hanya untuk user yang login --}}
+    @auth
+        <div class="modal fade" id="statModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle">Detail Statistik</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="modalContent">
+                    </div>
+                </div>
+            </div>
+        </div>
     @endauth
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {{-- Scripts --}}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    @auth
+        <script>
+            function loadStatDetail(type) {
+                $('#modalTitle').text('Memuat...');
+                $('#modalContent').html('<div class="text-center"><div class="spinner-border"></div></div>');
+
+                $.ajax({
+                    url: '/admin/dashboard/stats/' + type,
+                    type: 'GET',
+                    success: function(response) {
+                        $('#modalTitle').text(response.title);
+                        $('#modalContent').html(response.content);
+                    },
+                    error: function() {
+                        $('#modalContent').html('<div class="alert alert-danger">Gagal memuat data</div>');
+                    }
+                });
+
+                var myModal = new bootstrap.Modal(document.getElementById('statModal'));
+                myModal.show();
+            }
+        </script>
+    @endauth
 
     @stack('scripts')
 </body>
