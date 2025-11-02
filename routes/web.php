@@ -15,8 +15,13 @@ use App\Http\Controllers\AnggotaController;
 |--------------------------------------------------------------------------
 */
 
+// Root Route - Redirect to login
+Route::get('/', function () {
+    return redirect()->route('auth.login');
+});
+
 // Public Routes
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 // Auth Routes
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('auth.login');
@@ -50,7 +55,6 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/users/{user}', [AuthController::class, 'usersDestroy'])->name('admin.users.destroy');
         Route::post('/users/{user}/status', [AuthController::class, 'usersUpdateStatus'])->name('admin.users.status');
         Route::post('/users/{user}/reset-verification', [AuthController::class, 'usersResetVerification'])->name('admin.users.reset-verification');
-
 
         // Kesenian Management
         Route::get('/kesenian', [KesenianController::class, 'index'])->name('admin.kesenian.index');
