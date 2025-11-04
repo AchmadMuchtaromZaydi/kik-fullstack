@@ -1,6 +1,6 @@
 {{-- resources/views/layouts/partials/header.blade.php --}}
-<header class="bg-white shadow-sm py-3 fixed-top border-bottom">
-    <div class="container-fluid d-flex align-items-center">
+<header class="admin-header shadow-sm fixed-top">
+    <div class="container-fluid d-flex align-items-center h-100">
 
         {{-- Tombol Pemicu Sidebar Mobile --}}
         @auth
@@ -12,28 +12,27 @@
 
         {{-- JUDUL DESKTOP --}}
         <a href="{{ auth()->check() ? route('admin.dashboard') : route('home') }}"
-            class="text-decoration-none text-primary d-none d-lg-block me-auto">
+            class="text-decoration-none d-none d-lg-block me-auto admin-title">
             <h5 class="mb-0">
                 <i class="fas fa-theater-masks me-2"></i>
                 <strong>KIK System</strong>
                 @auth
-                    <small class="text-muted">Admin Panel</small>
+                    <small>Admin Panel</small>
                 @else
-                    <small class="text-muted">Sistem Informasi Kesenian</small>
+                    <small>Sistem Informasi Kesenian</small>
                 @endauth
             </h5>
         </a>
 
         {{-- JUDUL MOBILE --}}
-        <h4 class="mb-0 text-primary me-auto d-lg-none">
+        <h4 class="mb-0 text-white me-auto d-lg-none">
             @yield('page-title', auth()->check() ? 'Dashboard' : 'Home')
         </h4>
 
         {{-- Dropdown User hanya tampil jika login --}}
         @auth
             <div class="dropdown">
-                <button class="btn btn-light dropdown-toggle border" type="button" data-bs-toggle="dropdown"
-                    aria-expanded="false">
+                <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-user me-2"></i>{{ Auth::user()->name }}
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow">
@@ -54,7 +53,7 @@
         @else
             {{-- Tombol Login/Register untuk guest --}}
             <div class="d-flex gap-2">
-                <a href="{{ route('auth.login') }}" class="btn btn-outline-primary">
+                <a href="{{ route('auth.login') }}" class="btn btn-outline-light">
                     <i class="fas fa-sign-in-alt me-2"></i>Login
                 </a>
                 <a href="{{ route('auth.register') }}" class="btn btn-primary">

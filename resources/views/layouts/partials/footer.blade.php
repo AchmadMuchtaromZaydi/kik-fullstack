@@ -1,5 +1,5 @@
 {{-- resources/views/layouts/partials/footer.blade.php --}}
-<footer class="bg-light text-muted py-3 border-top mt-auto">
+<footer class="admin-footer text-muted">
     <div class="container-fluid">
         <div class="row align-items-center">
             <div class="col-md-6">
