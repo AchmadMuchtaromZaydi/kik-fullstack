@@ -1,40 +1,36 @@
-{{-- resources/views/admin/partials/stats/users-list.blade.php --}}
-@if ($data->count() > 0)
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
+<h6 class="mb-3">{{ $title }} ({{ $data->count() }} data)</h6>
+
+@if ($data->isEmpty())
+    <div class="alert alert-info">Tidak ada data</div>
+@else
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-sm table-striped table-hover">
+            <thead class="table-light sticky-top">
                 <tr>
-                    <th>#</th>
+                    <th width="50">#</th>
                     <th>Nama</th>
                     <th>Email</th>
                     <th>Role</th>
                     <th>Status</th>
-                    <th>Tanggal Daftar</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($data as $user)
+                @foreach ($data as $index => $user)
                     <tr>
-                        <td>{{ $loop->iteration }}</td>
-                        <td>{{ $user->name }}</td>
-                        <td>{{ $user->email }}</td>
-                        <td>{{ $user->role ?? 'User' }}</td>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $user->name ?? '-' }}</td>
+                        <td>{{ $user->email ?? '-' }}</td>
+                        <td><span class="badge bg-info">{{ $user->role ?? '-' }}</span></td>
                         <td>
-                            <span class="badge bg-{{ $user->isActive ? 'success' : 'danger' }}">
-                                {{ $user->isActive ? 'Aktif' : 'Tidak Aktif' }}
-                            </span>
+                            @if ($user->isActive)
+                                <span class="badge bg-success">Aktif</span>
+                            @else
+                                <span class="badge bg-danger">Tidak Aktif</span>
+                            @endif
                         </td>
-                        <td>{{ $user->created_at->format('d/m/Y H:i') }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
-    </div>
-    <div class="mt-3">
-        <strong>Total: {{ $data->count() }} user</strong>
-    </div>
-@else
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle me-2"></i>Tidak ada data ditemukan.
     </div>
 @endif

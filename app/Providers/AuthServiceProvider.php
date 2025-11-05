@@ -4,27 +4,33 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use App\Models\Organisasi;
+use App\Models\User;
+use App\Policies\OrganisasiPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
-    /**
-     * The policy mappings for the application.
-     *
-     * @var array<class-string, class-string>
-     */
     protected $policies = [
-        // 'App\Models\Model' => 'App\Policies\ModelPolicy',
+        Organisasi::class => OrganisasiPolicy::class,
     ];
 
-    /**
-     * Register any authentication / authorization services.
-     *
-     * @return void
-     */
-    public function boot()
+    public function boot(): void
     {
         $this->registerPolicies();
 
-        //
+        // Gate untuk admin
+        Gate::define('admin', function ($user) {
+            return $user->role === 'admin';
+        });
+
+        // Gate untuk user-kik
+        Gate::define('user-kik', function ($user) {
+            return $user->role === 'user-kik';
+        });
+
+        // Gate untuk akses dashboard admin
+        Gate::define('access-admin-dashboard', function ($user) {
+            return $user->role === 'admin';
+        });
     }
 }

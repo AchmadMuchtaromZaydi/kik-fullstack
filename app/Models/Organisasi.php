@@ -1,19 +1,20 @@
 <?php
-// app/Models/Organisasi.php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Organisasi extends Model
 {
     protected $table = 'kik_organisasi';
 
     protected $fillable = [
-        'nomor_induk', 'nama', 'nama_ketua', 'no_telp_ketua',
+        'uuid', 'nomor_induk', 'nama', 'nama_ketua', 'no_telp_ketua',
         'tanggal_berdiri', 'tanggal_daftar', 'tanggal_expired',
         'alamat', 'desa', 'kecamatan', 'kabupaten', 'jenis_kesenian',
-        'sub_kesenian', 'jumlah_anggota', 'status', 'user_id', 'keterangan'
+        'sub_kesenian', 'jumlah_anggota', 'status', 'user_id', 'keterangan',
+        'nama_jenis_kesenian', 'nama_kecamatan', 'nama_desa'
     ];
 
     protected $casts = [
@@ -22,13 +23,29 @@ class Organisasi extends Model
         'tanggal_expired' => 'date',
     ];
 
-    public function user()
+    protected static function boot()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
     }
 
-    public function anggota()
+    public function getRouteKeyName()
     {
-        return $this->hasMany(Anggota::class, 'organisasi_id');
+        return 'uuid';
+    }
+
+    /**
+     * Scope untuk data yang boleh diakses
+     */
+    public function scopeAccessible($query)
+    {
+        // Tambahkan logic authorization di sini
+        // Contoh: return $query->where('status', 'Allow');
+        return $query;
     }
 }

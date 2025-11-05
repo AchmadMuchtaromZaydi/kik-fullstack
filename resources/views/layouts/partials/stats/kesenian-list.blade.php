@@ -1,41 +1,42 @@
-{{-- resources/views/admin/partials/stats/kesenian-list.blade.php --}}
-@if ($data->count() > 0)
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
+<h6 class="mb-3">{{ $title }} ({{ $data->count() }} data)</h6>
+
+@if ($data->isEmpty())
+    <div class="alert alert-info">Tidak ada data</div>
+@else
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-sm table-striped table-hover">
+            <thead class="table-light sticky-top">
                 <tr>
-                    <th>#</th>
-                    <th>Nomor Induk</th>
+                    <th width="50">No</th>
                     <th>Nama Organisasi</th>
-                    <th>Ketua</th>
+                    <th>Nomor Induk</th>
+                    <th>Jenis Kesenian</th>
                     <th>Status</th>
-                    <th>Tanggal Daftar</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($data as $item)
+                @foreach ($data as $index => $item)
+                    @php
+                        $statusClass = [
+                            'Request' => 'bg-warning',
+                            'Allow' => 'bg-success',
+                            'Denny' => 'bg-danger',
+                            'DataLama' => 'bg-secondary',
+                        ];
+                    @endphp
                     <tr>
-                        <td>{{ $loop->iteration }}</td>
-                        <td>{{ $item->nomor_induk ?? '-' }}</td>
+                        <td>{{ $index + 1 }}</td>
                         <td>{{ $item->nama ?? '-' }}</td>
-                        <td>{{ $item->nama_ketua ?? '-' }}</td>
+                        <td>{{ $item->nomor_induk ?? '-' }}</td>
+                        <td>{{ $item->nama_jenis_kesenian ?? '-' }}</td>
                         <td>
-                            <span class="badge bg-{{ $item->status == 'Allow' ? 'success' : 'warning' }}">
-                                {{ $item->status }}
+                            <span class="badge {{ $statusClass[$item->status] ?? 'bg-secondary' }}">
+                                {{ $item->status ?? '-' }}
                             </span>
-                        </td>
-                        <td>{{ $item->tanggal_daftar ? \Carbon\Carbon::parse($item->tanggal_daftar)->format('d/m/Y') : '-' }}
                         </td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
-    </div>
-    <div class="mt-3">
-        <strong>Total: {{ $data->count() }} data</strong>
-    </div>
-@else
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle me-2"></i>Tidak ada data ditemukan.
     </div>
 @endif

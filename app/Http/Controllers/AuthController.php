@@ -92,8 +92,8 @@ class AuthController extends Controller
     {
         // Cek dulu apakah email sudah ada tapi belum terverifikasi
         $existingUser = User::where('email', $request->email)
-                            ->where('code_verified', '!=', 1)
-                            ->first();
+            ->where('code_verified', '!=', 1)
+            ->first();
 
         // Jika email sudah ada tapi belum terverifikasi, hapus user lama
         if ($existingUser) {
@@ -174,8 +174,8 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email', $request->email)
-                    ->where('code_verified', $request->code)
-                    ->first();
+            ->where('code_verified', $request->code)
+            ->first();
 
         if ($user) {
             // Update user menjadi verified dan AKTIF
@@ -249,7 +249,7 @@ class AuthController extends Controller
             // Coba kirim email
             Mail::send('emails.verification', $emailData, function ($message) use ($emailData) {
                 $message->to($emailData['recipient'])
-                        ->subject($emailData['subject']);
+                    ->subject($emailData['subject']);
             });
 
             Log::info("Verification email sent to: {$user->email}");
@@ -272,7 +272,10 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('home');
+
+        // ===== PERUBAHAN DI SINI =====
+        // Diubah dari 'home' ke 'auth.login' karena rute 'home' sudah dihapus.
+        return redirect()->route('auth.login');
     }
 
     /**

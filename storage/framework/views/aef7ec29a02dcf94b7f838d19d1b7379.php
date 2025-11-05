@@ -1,10 +1,7 @@
-{{-- resources/views/admin/dashboard.blade.php --}}
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Dashboard Admin'); ?>
+<?php $__env->startSection('page-title', 'Dashboard Admin'); ?>
 
-@section('title', 'Dashboard Admin')
-@section('page-title', 'Dashboard Admin')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div class="container-fluid">
         <!-- Statistik Cards -->
         <div class="row justify-content-center mb-4">
@@ -16,7 +13,7 @@
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="flex-grow-1">
                                 <h5 class="card-title fw-semibold">Total Kesenian</h5>
-                                <h2 class="mb-0 fw-bold">{{ $stats['total_kesenian'] }}</h2>
+                                <h2 class="mb-0 fw-bold"><?php echo e($stats['total_kesenian']); ?></h2>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-music fa-2x opacity-75"></i>
@@ -37,7 +34,7 @@
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="flex-grow-1">
                                 <h5 class="card-title fw-semibold">Kesenian Aktif</h5>
-                                <h2 class="mb-0 fw-bold">{{ $stats['kesenian_aktif'] }}</h2>
+                                <h2 class="mb-0 fw-bold"><?php echo e($stats['kesenian_aktif']); ?></h2>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-check-circle fa-2x opacity-75"></i>
@@ -58,7 +55,7 @@
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="flex-grow-1">
                                 <h5 class="card-title fw-semibold">Kesenian Tidak Aktif</h5>
-                                <h2 class="mb-0 fw-bold">{{ $stats['kesenian_tidak_aktif'] }}</h2>
+                                <h2 class="mb-0 fw-bold"><?php echo e($stats['kesenian_tidak_aktif']); ?></h2>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-times-circle fa-2x opacity-75"></i>
@@ -79,7 +76,7 @@
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="flex-grow-1">
                                 <h5 class="card-title fw-semibold">Total Users</h5>
-                                <h2 class="mb-0 fw-bold">{{ $stats['total_users'] }}</h2>
+                                <h2 class="mb-0 fw-bold"><?php echo e($stats['total_users']); ?></h2>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-users fa-2x opacity-75"></i>
@@ -100,7 +97,7 @@
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="flex-grow-1">
                                 <h5 class="card-title fw-semibold">User Aktif</h5>
-                                <h2 class="mb-0 fw-bold">{{ $stats['users_aktif'] }}</h2>
+                                <h2 class="mb-0 fw-bold"><?php echo e($stats['users_aktif']); ?></h2>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-user-check fa-2x opacity-75"></i>
@@ -121,7 +118,7 @@
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="flex-grow-1">
                                 <h5 class="card-title fw-semibold">User Tidak Aktif</h5>
-                                <h2 class="mb-0 fw-bold">{{ $stats['users_tidak_aktif'] }}</h2>
+                                <h2 class="mb-0 fw-bold"><?php echo e($stats['users_tidak_aktif']); ?></h2>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-user-times fa-2x opacity-75"></i>
@@ -145,24 +142,24 @@
                     <div class="card-body">
                         <div class="row justify-content-center">
                             <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
-                                <a href="{{ route('admin.users.create') }}"
+                                <a href="<?php echo e(route('admin.users.create')); ?>"
                                     class="btn btn-outline-primary w-100 h-100 py-3">
                                     <i class="fas fa-user-plus me-2"></i>Tambah User
                                 </a>
                             </div>
                             <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
-                                <a href="{{ route('admin.kesenian.create') }}"
+                                <a href="<?php echo e(route('admin.kesenian.create')); ?>"
                                     class="btn btn-outline-success w-100 h-100 py-3">
                                     <i class="fas fa-plus me-2"></i>Tambah Kesenian
                                 </a>
                             </div>
                             <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
-                                <a href="{{ route('admin.anggota.index') }}" class="btn btn-outline-info w-100 h-100 py-3">
+                                <a href="<?php echo e(route('admin.anggota.index')); ?>" class="btn btn-outline-info w-100 h-100 py-3">
                                     <i class="fas fa-user-friends me-2"></i>Kelola Anggota
                                 </a>
                             </div>
                             <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
-                                <a href="{{ route('admin.laporan') }}" class="btn btn-outline-warning w-100 h-100 py-3">
+                                <a href="<?php echo e(route('admin.laporan')); ?>" class="btn btn-outline-warning w-100 h-100 py-3">
                                     <i class="fas fa-chart-bar me-2"></i>Lihat Laporan
                                 </a>
                             </div>
@@ -198,9 +195,9 @@
             </div>
         </div>
     </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
     <script>
         function loadStatDetail(type) {
             // Tampilkan modal
@@ -284,4 +281,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
     </style>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\project-magang\fullstack-KIK\kik-fullstack\resources\views/admin/dashboard.blade.php ENDPATH**/ ?>
