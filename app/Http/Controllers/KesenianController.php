@@ -22,50 +22,66 @@ class KesenianController extends Controller
 
     public function index(Request $request)
     {
-        $query = Organisasi::query()->select(['id', 'nama', 'nomor_induk', 'nama_jenis_kesenian', 'nama_sub_kesenian', 'alamat', 'nama_ketua', 'no_telp_ketua', 'tanggal_daftar', 'tanggal_expired', 'status']);
+        // PERBAIKAN: Dapatkan nama tabel asli dari Model ('kik_organisasi')
+        $organisasiTable = (new Organisasi)->getTable();
+
+        // PERBAIKAN: Hapus alias 'organisasi' dan gunakan nama tabel asli
+        $query = Organisasi::query() // Ini akan otomatis menggunakan 'FROM kik_organisasi'
+            ->leftJoin('wilayah as kec', "$organisasiTable.kecamatan", '=', 'kec.kode')
+            ->leftJoin('wilayah as des', "$organisasiTable.desa", '=', 'des.kode')
+            ->select([
+                "$organisasiTable.id", "$organisasiTable.nama", "$organisasiTable.nomor_induk", 
+                "$organisasiTable.nama_jenis_kesenian", "$organisasiTable.nama_sub_kesenian", 
+                "$organisasiTable.alamat", "$organisasiTable.nama_ketua", "$organisasiTable.no_telp_ketua", 
+                "$organisasiTable.tanggal_daftar", "$organisasiTable.tanggal_expired", "$organisasiTable.status",
+                "$organisasiTable.kecamatan", // kode asli
+                "$organisasiTable.desa", // kode asli
+                'kec.nama as nama_kecamatan', // nama dari join
+                'des.nama as nama_desa' // nama dari join
+            ]);
 
         // Cek apakah ada pencarian atau filter
         $hasSearch = $request->filled('q') || $request->filled('jenis_kesenian') || $request->filled('kecamatan');
 
-        // Pencarian berdasarkan multiple parameter
+        // Pencarian (menggunakan nama tabel asli)
         if ($q = $request->get('q')) {
-            $query->where(function ($qry) use ($q) {
-                $qry->where('nama', 'like', "%{$q}%")
-                    ->orWhere('nomor_induk', 'like', "%{$q}%")
-                    ->orWhere('nama_jenis_kesenian', 'like', "%{$q}%")
-                    ->orWhere('nama_ketua', 'like', "%{$q}%")
-                    ->orWhere('alamat', 'like', "%{$q}%")
-                    ->orWhere('no_telp_ketua', 'like', "%{$q}%");
+            $query->where(function ($qry) use ($q, $organisasiTable) { 
+                $qry->where("$organisasiTable.nama", 'like', "%{$q}%")
+                    ->orWhere("$organisasiTable.nomor_induk", 'like', "%{$q}%")
+                    ->orWhere("$organisasiTable.nama_jenis_kesenian", 'like', "%{$q}%")
+                    ->orWhere("$organisasiTable.nama_ketua", 'like', "%{$q}%")
+                    ->orWhere("$organisasiTable.alamat", 'like', "%{$q}%")
+                    ->orWhere("$organisasiTable.no_telp_ketua", 'like', "%{$q}%");
             });
         }
 
-        // Filter berdasarkan jenis kesenian
+        // Filter jenis kesenian (menggunakan nama tabel asli)
         if ($jenisKesenian = $request->get('jenis_kesenian')) {
-            $query->where('nama_jenis_kesenian', $jenisKesenian);
+            $query->where("$organisasiTable.nama_jenis_kesenian", $jenisKesenian);
         }
 
-        // Filter berdasarkan kecamatan
+        // Filter kecamatan (ini sudah benar, pakai alias join 'kec')
         if ($kecamatan = $request->get('kecamatan')) {
-            $query->where('nama_kecamatan', $kecamatan);
+            $query->where('kec.nama', $kecamatan);
         }
 
-        // Urutkan
+        // Urutkan (menggunakan nama tabel asli)
         if ($hasSearch) {
-            $query->orderBy('id', 'desc');
+            $query->orderBy("$organisasiTable.id", 'desc');
         } else {
             $query
                 ->orderByRaw(
                     "
                 CASE
-                    WHEN status = 'Request' THEN 1
-                    WHEN status = 'Denny' THEN 2
-                    WHEN status = 'Allow' THEN 3
-                    WHEN status = 'DataLama' THEN 4
+                    WHEN $organisasiTable.status = 'Request' THEN 1
+                    WHEN $organisasiTable.status = 'Denny' THEN 2
+                    WHEN $organisasiTable.status = 'Allow' THEN 3
+                    WHEN $organisasiTable.status = 'DataLama' THEN 4
                     ELSE 5
                 END
-            ",
+            "
                 )
-                ->orderBy('id', 'desc');
+                ->orderBy("$organisasiTable.id", 'desc');
         }
 
         $dataKesenian = $query->get();
@@ -81,17 +97,27 @@ class KesenianController extends Controller
             ->pluck('nama')
             ->toArray();
 
+        // Pastikan path view ini benar (sesuai file Anda)
         return view('admin.kesenian.index', compact('dataKesenian', 'jenisKesenian', 'kecamatanList', 'hasSearch'));
     }
 
     public function show($id)
     {
-        $item = Organisasi::find($id);
+        // PERBAIKAN: Gunakan nama tabel asli di sini juga
+        $organisasiTable = (new Organisasi)->getTable();
+        
+        $item = Organisasi::query()
+            ->leftJoin('wilayah as kec', "$organisasiTable.kecamatan", '=', 'kec.kode')
+            ->leftJoin('wilayah as des', "$organisasiTable.desa", '=', 'des.kode')
+            ->select("$organisasiTable.*", 'kec.nama as nama_kecamatan', 'des.nama as nama_desa')
+            ->where("$organisasiTable.id", $id)
+            ->first();
 
         if (!$item) {
             return back()->with('error', 'Data tidak ditemukan.');
         }
-        return view('admin.kesenian.show', compact('item'));
+        
+        return view('admin.kesenian.show', compact('item')); 
     }
 
     public function edit($id)
@@ -118,52 +144,46 @@ class KesenianController extends Controller
     public function download(Request $request, $type)
     {
         $jenisKesenian = $request->get('jenis_kesenian');
-        $kecamatan = $request->get('kecamatan');
+        $kecamatan = $request->get('kecamatan'); // Ini adalah NAMA kecamatan dari filter
 
-        // Ambil semua data kesenian
+        // PERBAIKAN: Gunakan nama tabel asli di sini juga
+        $organisasiTable = (new Organisasi)->getTable();
+
         $query = Organisasi::query()
+            ->leftJoin('wilayah as kec', "$organisasiTable.kecamatan", '=', 'kec.kode')
+            ->leftJoin('wilayah as des', "$organisasiTable.desa", '=', 'des.kode')
             ->select([
-                'id', 'nama', 'nomor_induk', 'nama_jenis_kesenian',
-                'nama_sub_kesenian', 'alamat', 'nama_ketua', 'no_telp_ketua',
-                'tanggal_daftar', 'tanggal_expired', 'status', 'desa', 'kecamatan', 'jumlah_anggota'
+                "$organisasiTable.id", "$organisasiTable.nama", "$organisasiTable.nomor_induk", 
+                "$organisasiTable.nama_jenis_kesenian", "$organisasiTable.nama_sub_kesenian", 
+                "$organisasiTable.alamat", "$organisasiTable.nama_ketua", "$organisasiTable.no_telp_ketua", 
+                "$organisasiTable.tanggal_daftar", "$organisasiTable.tanggal_expired", "$organisasiTable.status", 
+                "$organisasiTable.jumlah_anggota",
+                "$organisasiTable.kecamatan", // kode asli
+                "$organisasiTable.desa", // kode asli
+                'kec.nama as nama_kecamatan', // nama dari join
+                'des.nama as nama_desa' // nama dari join
             ]);
 
         // Filter opsional berdasarkan jenis kesenian
         if ($jenisKesenian) {
-            $query->where('nama_jenis_kesenian', $jenisKesenian);
+            $query->where("$organisasiTable.nama_jenis_kesenian", $jenisKesenian);
         }
 
         // Filter opsional berdasarkan kecamatan (jika dipilih)
         if ($kecamatan) {
-            $query->where('kecamatan', $kecamatan);
+            $query->where('kec.nama', $kecamatan); // Filter by NAMA
         }
 
-        $allData = $query->orderBy('kecamatan')->orderBy('nama')->get();
-
-        // Validasi untuk Excel - pastikan semua data memiliki nomor induk
-        if ($type === 'excel') {
-            $dataWithoutNomorInduk = $allData->filter(function ($item) {
-                return empty($item->nomor_induk) || $item->nomor_induk == 'Belum ada';
-            });
-
-            if ($dataWithoutNomorInduk->count() > 0) {
-                return back()->with('error', 
-                    'Tidak dapat mengexport ke Excel karena terdapat ' . $dataWithoutNomorInduk->count() . 
-                    ' data tanpa nomor induk. Silakan periksa data terlebih dahulu.'
-                );
-            }
-        }
+        $allData = $query->orderBy('kec.nama')->orderBy("$organisasiTable.nama")->get();
 
         $filename = 'data_kesenian';
         
-        // Tambahkan info filter ke filename
         if ($kecamatan) {
             $filename .= '_' . str_replace(' ', '_', strtolower($kecamatan));
         }
         if ($jenisKesenian) {
             $filename .= '_' . str_replace(' ', '_', strtolower($jenisKesenian));
         }
-        
         if (!$kecamatan && !$jenisKesenian) {
             $filename .= '_semua_kecamatan';
         }
@@ -179,10 +199,12 @@ class KesenianController extends Controller
 
     private function generatePDF($data, $filename)
     {
-        // Kelompokkan data berdasarkan kecamatan
-        $dataByKecamatan = $data->groupBy('kecamatan');
+        $dataByKecamatan = $data->groupBy(function($item) {
+            return $item->nama_kecamatan ?? 'Tidak Terkategori';
+        });
 
-        $pdf = Pdf::loadView('admin.kesenian.export-pdf', [
+        // Pastikan path view ini benar (sesuai file yang Anda berikan)
+        $pdf = Pdf::loadView('kesenian.export-pdf', [ 
             'dataByKecamatan' => $dataByKecamatan,
             'tanggalExport' => now()->format('d/m/Y H:i:s')
         ]);
@@ -195,6 +217,9 @@ class KesenianController extends Controller
         return Excel::download(new KesenianExport($data), $filename . '.xlsx');
     }
 
+    // --- FUNGSI UPDATE, DESTROY, IMPORT DI BAWAH INI TIDAK PERLU DIUBAH ---
+    // --- KARENA MEREKA MENGGUNAKAN ELOQUENT ORM (find, create, update) ---
+
     public function update(Request $request, $id)
     {
         $item = Organisasi::find($id);
@@ -202,13 +227,12 @@ class KesenianController extends Controller
             return back()->with('error', 'Data tidak ditemukan.');
         }
 
-        // Validasi kecamatan berdasarkan data dari model Wilayah
         $kecamatanList = Wilayah::where('kode', 'LIKE', '%.%.%')
             ->where('kode', 'NOT LIKE', '%.%.%.%')
             ->where('kode', '!=', '35.10')
             ->pluck('nama')
             ->toArray();
-
+            
         $kecamatanRule = 'required|string|max:255|in:' . implode(',', $kecamatanList);
 
         $request->validate([
@@ -216,13 +240,16 @@ class KesenianController extends Controller
             'nama_ketua' => 'required|string|max:200',
             'no_telp_ketua' => 'required|string|max:20',
             'alamat' => 'required|string',
-            'desa' => 'nullable|string|max:255',
-            'kecamatan' => $kecamatanRule,
+            'desa' => 'nullable|string|max:255', // Ini adalah NAMA desa
+            'kecamatan' => $kecamatanRule, // Ini adalah NAMA kecamatan
             'jenis_kesenian' => 'required|string|max:255',
             'jumlah_anggota' => 'nullable|integer|min:1',
             'status' => 'required|in:Request,Allow,Denny,DataLama',
             'tanggal_expired' => 'nullable|date',
         ]);
+
+        $wilayahKec = Wilayah::where('nama', $request->kecamatan)->first();
+        $wilayahDes = Wilayah::where('nama', $request->desa)->first(); 
 
         $jenisKesenianModel = JenisKesenian::where('nama', $request->jenis_kesenian)->first();
         $jenisKesenianId = $jenisKesenianModel ? $jenisKesenianModel->id : null;
@@ -232,9 +259,11 @@ class KesenianController extends Controller
             'nama_ketua' => $request->nama_ketua,
             'no_telp_ketua' => $request->no_telp_ketua,
             'alamat' => $request->alamat,
-            'desa' => $request->desa,
-            'kecamatan' => $request->kecamatan,
-            'nama_kecamatan' => $request->kecamatan,
+            
+            'desa' => $wilayahDes ? $wilayahDes->kode : $request->desa, // Simpan KODE
+            'kecamatan' => $wilayahKec ? $wilayahKec->kode : $request->kecamatan, // Simpan KODE
+            'nama_kecamatan' => $request->kecamatan, // Simpan NAMA
+            
             'jenis_kesenian' => $jenisKesenianId,
             'nama_jenis_kesenian' => $request->jenis_kesenian,
             'jumlah_anggota' => $request->jumlah_anggota,
@@ -277,7 +306,6 @@ class KesenianController extends Controller
             $fileName = time() . '_' . $file->getClientOriginalName();
             $filePath = $file->storeAs('imports', $fileName);
 
-            // Process Excel file
             $importResult = $this->processExcelFile($filePath);
 
             if ($importResult['success']) {
@@ -320,24 +348,27 @@ class KesenianController extends Controller
         $successCount = 0;
         $errorCount = 0;
         $duplicateCount = 0;
-        $existingDataCache = []; // Cache untuk data yang sudah ada
+        $existingDataCache = []; 
+        
+        $organisasiTable = (new Organisasi)->getTable();
+        
+        $wilayahCache = Wilayah::all()->keyBy(function($item) {
+            return strtolower($item->nama); // Key by lowercase name
+        });
 
         try {
-            // Load Excel file
             $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(storage_path('app/' . $filePath));
             $worksheet = $spreadsheet->getActiveSheet();
             $rows = $worksheet->toArray();
 
-            // Skip header row
-            array_shift($rows);
+            array_shift($rows); // Skip header
 
             DB::beginTransaction();
 
             foreach ($rows as $index => $row) {
-                $rowNumber = $index + 2; // +2 karena kita skipped header dan index starts dari 0
+                $rowNumber = $index + 2; 
 
                 try {
-                    // Validate row data
                     $validator = Validator::make([
                         'nama' => $row[0] ?? null,
                         'nomor_induk' => $row[1] ?? null,
@@ -350,7 +381,7 @@ class KesenianController extends Controller
                         'jumlah_anggota' => $row[8] ?? null,
                     ], [
                         'nama' => 'required|string|max:255',
-                        'nomor_induk' => 'nullable|string|max:50|unique:organisasi,nomor_induk',
+                        'nomor_induk' => "nullable|string|max:50|unique:$organisasiTable,nomor_induk", // pastikan nama tabel benar
                         'nama_jenis_kesenian' => 'required|string|max:255',
                         'nama_ketua' => 'required|string|max:200',
                         'no_telp_ketua' => 'required|string|max:20',
@@ -368,11 +399,9 @@ class KesenianController extends Controller
 
                     $data = $validator->validated();
 
-                    // CEK DUPLIKASI: Nama Organisasi + Jenis Kesenian
                     $namaOrganisasi = trim($data['nama']);
                     $jenisKesenian = trim($data['nama_jenis_kesenian']);
 
-                    // Gunakan cache untuk mengurangi query ke database
                     $cacheKey = $namaOrganisasi . '|' . $jenisKesenian;
                     if (!isset($existingDataCache[$cacheKey])) {
                         $existingDataCache[$cacheKey] = Organisasi::where('nama', $namaOrganisasi)
@@ -382,11 +411,10 @@ class KesenianController extends Controller
 
                     if ($existingDataCache[$cacheKey]) {
                         $duplicateCount++;
-                        $errors[] = "Baris $rowNumber: Data duplikat - Organisasi '$namaOrganisasi' dengan jenis kesenian '$jenisKesenian' sudah ada di database";
+                        $errors[] = "Baris $rowNumber: Data duplikat - Organisasi '$namaOrganisasi' dengan jenis kesenian '$jenisKesenian' sudah ada";
                         continue;
                     }
 
-                    // CEK DUPLIKASI: Nomor Induk (jika ada)
                     if (!empty($data['nomor_induk'])) {
                         $nomorIndukExists = Organisasi::where('nomor_induk', $data['nomor_induk'])->exists();
                         if ($nomorIndukExists) {
@@ -396,28 +424,39 @@ class KesenianController extends Controller
                         }
                     }
 
-                    // Check if jenis kesenian exists
                     $jenisKesenianModel = JenisKesenian::where('nama', $data['nama_jenis_kesenian'])->first();
                     $jenisKesenianId = $jenisKesenianModel ? $jenisKesenianModel->id : null;
 
-                    // Generate nomor induk if empty
                     $nomorInduk = $data['nomor_induk'];
                     if (empty($nomorInduk)) {
                         $lastOrganisasi = Organisasi::orderBy('id', 'desc')->first();
                         $nextId = $lastOrganisasi ? $lastOrganisasi->id + 1 : 1;
                         $nomorInduk = 'KS' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
                     }
+                    
+                    $namaKecamatan = trim($data['kecamatan']);
+                    $wilayahKec = $wilayahCache[strtolower($namaKecamatan)] ?? null; 
+                    
+                    $namaDesa = trim($data['desa']);
+                    $wilayahDes = $wilayahCache[strtolower($namaDesa)] ?? null; 
 
-                    // Create organisasi
+                    if (empty($wilayahKec)) {
+                         $errorCount++;
+                         $errors[] = "Baris $rowNumber: Nama Kecamatan '{$namaKecamatan}' tidak ditemukan di database.";
+                         continue;
+                    }
+                    
+                    $kodeDesa = $wilayahDes ? $wilayahDes->kode : null;
+
                     Organisasi::create([
                         'nama' => $data['nama'],
                         'nomor_induk' => $nomorInduk,
                         'nama_ketua' => $data['nama_ketua'],
                         'no_telp_ketua' => $data['no_telp_ketua'],
                         'alamat' => $data['alamat'],
-                        'desa' => $data['desa'],
-                        'kecamatan' => $data['kecamatan'],
-                        'nama_kecamatan' => $data['kecamatan'],
+                        'desa' => $kodeDesa, // Simpan KODE
+                        'kecamatan' => $wilayahKec->kode, // Simpan KODE
+                        'nama_kecamatan' => $namaKecamatan, // Simpan NAMA
                         'jenis_kesenian' => $jenisKesenianId,
                         'nama_jenis_kesenian' => $data['nama_jenis_kesenian'],
                         'jumlah_anggota' => $data['jumlah_anggota'],
@@ -427,8 +466,6 @@ class KesenianController extends Controller
                     ]);
 
                     $successCount++;
-
-                    // Tambahkan ke cache setelah berhasil create
                     $existingDataCache[$cacheKey] = true;
 
                 } catch (\Exception $e) {

@@ -131,8 +131,9 @@
                         <td>{{ $item->nama_jenis_kesenian }}</td>
                         <td>
                             {{ $item->alamat }}
-                            @if ($item->desa)
-                                <br><small>Desa {{ $item->desa }}</small>
+                            {{-- PERBAIKAN: Tampilkan nama_desa, fallback ke kode desa --}}
+                            @if ($item->nama_desa || $item->desa)
+                                <br><small>Desa {{ $item->nama_desa ?? $item->desa }}</small>
                             @endif
                         </td>
                         <td>
