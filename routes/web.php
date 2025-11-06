@@ -108,9 +108,11 @@ Route::prefix('user-kik')->name('user.')->middleware(['auth', 'role:user-kik'])-
         Route::get('/kesenian/{organisasi:uuid}/edit', [KesenianController::class, 'edit'])->name('admin.kesenian.edit');
         Route::put('/kesenian/{organisasi:uuid}', [KesenianController::class, 'update'])->name('admin.kesenian.update');
         Route::delete('/kesenian/{organisasi:uuid}', [KesenianController::class, 'destroy'])->name('admin.kesenian.destroy');
+       // Di dalam group admin - web.php
         Route::get('/kesenian/import', [KesenianController::class, 'showImportForm'])->name('admin.kesenian.import');
         Route::post('/kesenian/import', [KesenianController::class, 'import'])->name('admin.kesenian.import.post');
-
+        // Di dalam group admin
+        Route::get('/kesenian/download/{type}', [KesenianController::class, 'download'])->name('admin.kesenian.download');
         // Jenis Kesenian
         Route::get('/jenis-kesenian', [JenisKesenianController::class, 'index'])->name('admin.jenis-kesenian');
         Route::post('/jenis-kesenian', [JenisKesenianController::class, 'store'])->name('admin.jenis-kesenian.store');
