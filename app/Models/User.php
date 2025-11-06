@@ -53,5 +53,7 @@ class User extends Authenticatable
         return $this->role === 'user-kik';
     }
 
+
+
     // Hapus method isActive() karena tidak digunakan lagi
 }

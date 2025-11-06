@@ -23,29 +23,42 @@ class Organisasi extends Model
         'tanggal_expired' => 'date',
     ];
 
-    protected static function boot()
+     public function kabupaten()
     {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = (string) Str::uuid();
-            }
-        });
+        return $this->belongsTo(Wilayah::class, 'kabupaten_kode', 'kode');
     }
 
-    public function getRouteKeyName()
+    public function kecamatan()
     {
-        return 'uuid';
+        return $this->belongsTo(Wilayah::class, 'kecamatan_kode', 'kode');
     }
 
-    /**
-     * Scope untuk data yang boleh diakses
-     */
-    public function scopeAccessible($query)
+    public function desa()
     {
-        // Tambahkan logic authorization di sini
-        // Contoh: return $query->where('status', 'Allow');
-        return $query;
+        return $this->belongsTo(Wilayah::class, 'desa_kode', 'kode');
     }
+
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function anggota()
+    {
+        return $this->hasMany(Anggota::class, 'organisasi_id');
+    }
+
+    public function jenisKesenianObj()
+{
+    return $this->belongsTo(JenisKesenian::class, 'jenis_kesenian');
+    // 'jenis_kesenian' adalah kolom di tabel organisasi yang menyimpan ID jenis kesenian
+}
+
+// Relasi ke sub jenis kesenian
+public function subKesenianObj()
+{
+    return $this->belongsTo(JenisKesenian::class, 'sub_kesenian');
+    // 'sub_kesenian' adalah kolom di tabel organisasi yang menyimpan ID sub jenis
+}
 }

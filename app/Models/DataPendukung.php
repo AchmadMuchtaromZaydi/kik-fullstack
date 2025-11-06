@@ -8,4 +8,17 @@ class DataPendukung extends Model
 {
     // use HasFactory;
     protected $table = 'kik_datapendukung';
+
+     protected $fillable = [
+        'tipe',
+        'image',
+        'organisasi_id',
+        'validasi',
+    ];
+
+    // Relasi ke Organisasi
+    public function organisasi()
+    {
+        return $this->belongsTo(Organisasi::class, 'organisasi_id');
+    }
 }

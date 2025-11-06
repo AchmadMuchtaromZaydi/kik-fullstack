@@ -8,7 +8,13 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AnggotaController;
 use App\Http\Controllers\KesenianController;
+use App\Http\Controllers\ValidasiController;
+use App\Http\Controllers\InventarisController;
+use App\Http\Controllers\OrganisasiController;
+use App\Http\Controllers\DataAnggotaController;
+use App\Http\Controllers\DataPendukungController;
 use App\Http\Controllers\JenisKesenianController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -32,16 +38,50 @@ Route::post('/verify', [AuthController::class, 'verifyCode'])->name('auth.verify
 Route::post('/resend-code', [AuthController::class, 'resendCode'])->name('auth.resend.code');
 Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
-// Protected Routes - SEMUA USER YANG LOGIN
 Route::middleware(['auth'])->group(function () {
     // Dashboard berdasarkan role
     Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
 
-    // Routes khusus USER-KIK
-    Route::middleware(['can:user-kik'])->group(function () {
-        Route::get('/profile', [HomeController::class, 'profile'])->name('user.profile');
-        Route::put('/profile', [HomeController::class, 'updateProfile'])->name('user.profile.update');
-    });
+Route::prefix('user-kik')->name('user.')->middleware(['auth', 'role:user-kik'])->group(function () {
+
+    // Profile
+    Route::get('/profile', [HomeController::class, 'profile'])->name('profile');
+    Route::put('/profile', [HomeController::class, 'updateProfile'])->name('profile.update');
+
+    // Organisasi
+    Route::get('/organisasi', [OrganisasiController::class, 'index'])->name('organisasi.index');
+    Route::get('/organisasi/create', [OrganisasiController::class, 'create'])->name('organisasi.create');
+    Route::post('/organisasi', [OrganisasiController::class, 'store'])->name('organisasi.store');
+    Route::get('/organisasi/sub/{id}', [OrganisasiController::class, 'getSubKesenian'])->name('organisasi.subkesenian');
+    Route::get('/organisasi/kecamatan/{kode}', [OrganisasiController::class, 'getKecamatan'])->name('organisasi.kecamatan');
+    Route::get('/organisasi/desa/{kode}', [OrganisasiController::class, 'getDesa'])->name('organisasi.desa');
+
+    // Anggota
+    Route::get('/anggota', [DataAnggotaController::class, 'index'])->name('anggota.index');
+    Route::get('/anggota/create', [DataAnggotaController::class, 'create'])->name('anggota.create');
+    Route::post('/anggota', [DataAnggotaController::class, 'store'])->name('anggota.store');
+    Route::get('/anggota/{id}/edit', [DataAnggotaController::class, 'edit'])->name('anggota.edit');
+    Route::put('/anggota/{id}', [DataAnggotaController::class, 'update'])->name('anggota.update');
+    Route::delete('/anggota/{id}', [DataAnggotaController::class, 'destroy'])->name('anggota.destroy');
+
+    // Inventaris
+    Route::get('/inventaris', [InventarisController::class, 'index'])->name('inventaris.index');
+    Route::get('/inventaris/create', [InventarisController::class, 'create'])->name('inventaris.create');
+    Route::post('/inventaris', [InventarisController::class, 'store'])->name('inventaris.store');
+    Route::get('/inventaris/{id}/edit', [InventarisController::class, 'edit'])->name('inventaris.edit');
+    Route::put('/inventaris/{id}', [InventarisController::class, 'update'])->name('inventaris.update');
+    Route::delete('/inventaris/{id}', [InventarisController::class, 'destroy'])->name('inventaris.destroy');
+
+    // Data Pendukung
+    Route::get('/pendukung', [DataPendukungController::class, 'index'])->name('pendukung.index');
+    Route::get('/pendukung/create', [DataPendukungController::class, 'create'])->name('pendukung.create');
+    Route::post('/pendukung', [DataPendukungController::class, 'store'])->name('pendukung.store');
+    Route::delete('/pendukung/{id}', [DataPendukungController::class, 'destroy'])->name('pendukung.destroy');
+
+    // Validasi
+    Route::get('/validasi', [ValidasiController::class, 'index'])->name('validasi.index');
+});
+
 
     // Routes khusus ADMIN - TANPA POLICY DI CONTROLLER (sementara)
     Route::prefix('admin')->middleware(['can:admin'])->group(function () {
@@ -86,6 +126,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/anggota/{anggota:uuid}', [AnggotaController::class, 'destroy'])->name('admin.anggota.destroy');
     });
 });
+
 
 // Test Email Route
 Route::get('/test-email', function () {
