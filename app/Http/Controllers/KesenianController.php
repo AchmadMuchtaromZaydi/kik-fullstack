@@ -105,7 +105,7 @@ class KesenianController extends Controller
     public function show($id)
     {
         $organisasiTable = (new Organisasi)->getTable();
-        
+
         // PERBAIKAN: Gunakan nama tabel asli di sini juga
         $item = Organisasi::query()
             ->leftJoin('wilayah as kec', "$organisasiTable.kecamatan", '=', 'kec.kode')
@@ -117,9 +117,9 @@ class KesenianController extends Controller
         if (!$item) {
             return back()->with('error', 'Data tidak ditemukan.');
         }
-        
+
         // Path view ini (kesenian.show) sudah benar sesuai struktur file Anda
-        return view('kesenian.show', compact('item')); 
+        return view('kesenian.show', compact('item'));
     }
 
     public function edit($id)
@@ -182,7 +182,7 @@ class KesenianController extends Controller
         // Validasi Excel sudah dihapus sesuai permintaan sebelumnya
 
         $filename = 'data_kesenian';
-        
+
         // Tambahkan info filter ke filename
         if ($kecamatan) {
             $filename .= '_' . str_replace(' ', '_', strtolower($kecamatan));
@@ -190,7 +190,7 @@ class KesenianController extends Controller
         if ($jenisKesenian) {
             $filename .= '_' . str_replace(' ', '_', strtolower($jenisKesenian));
         }
-        
+
         if (!$kecamatan && !$jenisKesenian) {
             $filename .= '_semua_kecamatan';
         }
@@ -206,6 +206,7 @@ class KesenianController extends Controller
 
     private function generatePDF($data, $filename)
     {
+        set_time_limit(300);
         // PERBAIKAN: Tambahkan try-catch untuk menangkap error dompdf
         try {
             $dataByKecamatan = $data->groupBy(function($item) {
@@ -213,7 +214,7 @@ class KesenianController extends Controller
             });
 
             // Path view ini (kesenian.export-pdf) sudah benar sesuai struktur file Anda
-            $pdf = Pdf::loadView('kesenian.export-pdf', [ 
+            $pdf = Pdf::loadView('kesenian.export-pdf', [
                 'dataByKecamatan' => $dataByKecamatan,
                 'tanggalExport' => now()->format('d/m/Y H:i:s')
             ]);
@@ -223,7 +224,7 @@ class KesenianController extends Controller
         } catch (Throwable $e) {
             // Ini akan menampilkan error dompdf di layar, bukan hanya gagal download
             Log::error('PDF Download Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            
+
             // Tampilkan pesan error yang jelas di halaman sebelumnya
             return back()->with('error', 'Gagal membuat PDF: ' . $e->getMessage());
         }
@@ -247,7 +248,7 @@ class KesenianController extends Controller
             ->where('kode', '!=', '35.10')
             ->pluck('nama')
             ->toArray();
-            
+
         $kecamatanRule = 'required|string|max:255|in:' . implode(',', $kecamatanList);
 
         $request->validate([
@@ -266,7 +267,7 @@ class KesenianController extends Controller
 
         // AMBIL KODE berdasarkan NAMA yang di-submit
         $wilayahKec = Wilayah::where('nama', $request->kecamatan)->first();
-        $wilayahDes = Wilayah::where('nama', $request->desa)->first(); 
+        $wilayahDes = Wilayah::where('nama', $request->desa)->first();
 
         $jenisKesenianModel = JenisKesenian::where('nama', $request->jenis_kesenian)->first();
         $jenisKesenianId = $jenisKesenianModel ? $jenisKesenianModel->id : null;
@@ -276,11 +277,11 @@ class KesenianController extends Controller
             'nama_ketua' => $request->nama_ketua,
             'no_telp_ketua' => $request->no_telp_ketua,
             'alamat' => $request->alamat,
-            
+
             'desa' => $wilayahDes ? $wilayahDes->kode : $request->desa, // Simpan KODE
             'kecamatan' => $wilayahKec ? $wilayahKec->kode : $request->kecamatan, // Simpan KODE
             'nama_kecamatan' => $request->kecamatan, // Simpan NAMA
-            
+
             'jenis_kesenian' => $jenisKesenianId,
             'nama_jenis_kesenian' => $request->jenis_kesenian,
             'jumlah_anggota' => $request->jumlah_anggota,
@@ -338,7 +339,7 @@ class KesenianController extends Controller
                 }
 
                 return back()->with('success', $message);
-                
+
             } else {
                 $message = 'Tidak ada data yang berhasil diimport.';
                 if (count($importResult['errors']) > 0) {
@@ -362,11 +363,11 @@ class KesenianController extends Controller
         $successCount = 0;
         $errorCount = 0;
         $duplicateCount = 0;
-        $existingDataCache = []; 
-        
+        $existingDataCache = [];
+
         // Dapatkan nama tabel dari model
         $organisasiTable = (new Organisasi)->getTable();
-        
+
         // Cache Wilayah untuk performa (Ubah 'nama' menjadi key)
         $wilayahCache = Wilayah::all()->keyBy(function($item) {
             return strtolower($item->nama); // Key by lowercase name
@@ -383,7 +384,7 @@ class KesenianController extends Controller
             DB::beginTransaction();
 
             foreach ($rows as $index => $row) {
-                $rowNumber = $index + 2; 
+                $rowNumber = $index + 2;
 
                 try {
                     // Validasi data baris
@@ -400,7 +401,7 @@ class KesenianController extends Controller
                     ], [
                         'nama' => 'required|string|max:255',
                         // PERBAIKAN: Gunakan nama tabel dinamis
-                        'nomor_induk' => "nullable|string|max:50|unique:$organisasiTable,nomor_induk", 
+                        'nomor_induk' => "nullable|string|max:50|unique:$organisasiTable,nomor_induk",
                         'nama_jenis_kesenian' => 'required|string|max:255',
                         'nama_ketua' => 'required|string|max:200',
                         'no_telp_ketua' => 'required|string|max:20',
@@ -451,20 +452,20 @@ class KesenianController extends Controller
                         // Jangan generate nomor induk baru, biarkan null/kosong
                         $nomorInduk = null;
                     }
-                    
+
                     // Konversi NAMA wilayah ke KODE saat import
                     $namaKecamatan = trim($data['kecamatan']);
-                    $wilayahKec = $wilayahCache[strtolower($namaKecamatan)] ?? null; 
-                    
+                    $wilayahKec = $wilayahCache[strtolower($namaKecamatan)] ?? null;
+
                     $namaDesa = trim($data['desa']);
-                    $wilayahDes = $wilayahCache[strtolower($namaDesa)] ?? null; 
+                    $wilayahDes = $wilayahCache[strtolower($namaDesa)] ?? null;
 
                     if (empty($wilayahKec)) {
                          $errorCount++;
                          $errors[] = "Baris $rowNumber: Nama Kecamatan '{$namaKecamatan}' tidak ditemukan di database.";
                          continue;
                     }
-                    
+
                     $kodeDesa = $wilayahDes ? $wilayahDes->kode : null;
 
                     Organisasi::create([

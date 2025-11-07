@@ -134,12 +134,13 @@
 <body>
     <div class="header">
         <h1>DATA ORGANISASI KESENIAN SEMUA KECAMATAN</h1>
-        <p>Tanggal Export: {{ $tanggalExport }}</p>
+        <p>Tanggal Export: <?php echo e($tanggalExport); ?></p>
     </div>
 
-    @foreach ($dataByKecamatan as $kecamatan => $dataKesenian)
-        <div class="kecamatan-header" style="@if (!$loop->first) page-break-before: always; @endif">
-            KECAMATAN: {{ $kecamatan ?? 'Tidak Terkategori' }}
+    <?php $__currentLoopData = $dataByKecamatan; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kecamatan => $dataKesenian): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        <div class="kecamatan-header" style="<?php if(!$loop->first): ?> page-break-before: always; <?php endif; ?>">
+            KECAMATAN: <?php echo e($kecamatan ?? 'Tidak Terkategori'); ?>
+
         </div>
 
         <table>
@@ -157,36 +158,40 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($dataKesenian as $index => $item)
+                <?php $__currentLoopData = $dataKesenian; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <tr>
-                        <td class="text-center">{{ $index + 1 }}</td>
-                        <td>{{ $item->nama }}</td>
-                        <td>{{ $item->nomor_induk ?? '-' }}</td>
-                        <td>{{ $item->nama_jenis_kesenian ?? '-' }}</td>
+                        <td class="text-center"><?php echo e($index + 1); ?></td>
+                        <td><?php echo e($item->nama); ?></td>
+                        <td><?php echo e($item->nomor_induk ?? '-'); ?></td>
+                        <td><?php echo e($item->nama_jenis_kesenian ?? '-'); ?></td>
                         <td>
-                            {{ $item->alamat }}
-                            @if ($item->nama_desa || $item->desa)
-                                <br><small>Desa {{ $item->nama_desa ?? $item->desa }}</small>
-                            @endif
+                            <?php echo e($item->alamat); ?>
+
+                            <?php if($item->nama_desa || $item->desa): ?>
+                                <br><small>Desa <?php echo e($item->nama_desa ?? $item->desa); ?></small>
+                            <?php endif; ?>
                         </td>
                         <td>
-                            {{ $item->nama_ketua }}
-                            @if ($item->no_telp_ketua)
-                                <br><small>{{ $item->no_telp_ketua }}</small>
-                            @endif
+                            <?php echo e($item->nama_ketua); ?>
+
+                            <?php if($item->no_telp_ketua): ?>
+                                <br><small><?php echo e($item->no_telp_ketua); ?></small>
+                            <?php endif; ?>
                         </td>
                         <td class="text-center">
-                            {{ $item->tanggal_daftar && $item->tanggal_daftar != '0000-00-00'
+                            <?php echo e($item->tanggal_daftar && $item->tanggal_daftar != '0000-00-00'
                                 ? \Carbon\Carbon::parse($item->tanggal_daftar)->format('d/m/Y')
-                                : '-' }}
+                                : '-'); ?>
+
                         </td>
                         <td class="text-center">
-                            {{ $item->tanggal_expired && $item->tanggal_expired != '0000-00-00'
+                            <?php echo e($item->tanggal_expired && $item->tanggal_expired != '0000-00-00'
                                 ? \Carbon\Carbon::parse($item->tanggal_expired)->format('d/m/Y')
-                                : '-' }}
+                                : '-'); ?>
+
                         </td>
                         <td class="text-center">
-                            @php
+                            <?php
                                 $statusColors = [
                                     'Request' => 'bg-warning',
                                     'Allow' => 'bg-success',
@@ -199,22 +204,25 @@
                                     'Denny' => 'Ditolak',
                                     'DataLama' => 'Data Lama',
                                 ];
-                            @endphp
-                            <span class="badge {{ $statusColors[$item->status] ?? '' }}">
-                                {{ $statusTexts[$item->status] ?? $item->status }}
+                            ?>
+                            <span class="badge <?php echo e($statusColors[$item->status] ?? ''); ?>">
+                                <?php echo e($statusTexts[$item->status] ?? $item->status); ?>
+
                             </span>
                         </td>
                     </tr>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </tbody>
         </table>
-    @endforeach
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
     <div class="footer">
-        Total Data: {{ $dataByKecamatan->flatten()->count() }} Organisasi |
-        Total Kecamatan: {{ $dataByKecamatan->count() }}<br>
-        Dicetak pada: {{ $tanggalExport }}
+        Total Data: <?php echo e($dataByKecamatan->flatten()->count()); ?> Organisasi |
+        Total Kecamatan: <?php echo e($dataByKecamatan->count()); ?><br>
+        Dicetak pada: <?php echo e($tanggalExport); ?>
+
     </div>
 </body>
 
 </html>
+<?php /**PATH C:\project-magang\fullstack-KIK\kik-fullstack\resources\views/kesenian/export-pdf.blade.php ENDPATH**/ ?>
