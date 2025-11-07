@@ -2,7 +2,6 @@
 
 namespace App\Exports;
 
-// PERBAIKAN: Hapus 'FromCollection', 'WithHeadings', 'WithMapping' dari 'use'
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
@@ -12,8 +11,6 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use Carbon\Carbon;
 
-// PERBAIKAN KUNCI: Hapus implements FromCollection, WithHeadings, WithMapping
-// Kita hanya perlu WithStyles (untuk style default A1) dan WithEvents (untuk membuat laporan)
 class KesenianExport implements WithStyles, WithEvents
 {
     protected $data;
@@ -25,10 +22,8 @@ class KesenianExport implements WithStyles, WithEvents
         $this->kecamatan = $kecamatan;
     }
 
-    // Metode collection() tidak diperlukan lagi karena kita tidak meng-implementasi FromCollection
-
     /**
-     * Header kolom (Dipanggil manual dari event)
+     * Header kolom
      */
     public function headings(): array
     {
@@ -45,31 +40,27 @@ class KesenianExport implements WithStyles, WithEvents
             'TANGGAL DAFTAR',
             'TANGGAL EXPIRED',
             'STATUS',
-            'JUMLAH ANGGOTA',
         ];
     }
 
     /**
-     * Mapping setiap baris (Dipanggil manual dari event)
+     * Mapping setiap baris data
      */
-    public function map($organisasi): array
+    public function map($no, $organisasi): array
     {
-        // Cek nomor induk dan beri nilai default jika kosong
         $nomorInduk = $organisasi->nomor_induk;
         if (empty($nomorInduk) || $nomorInduk == 'Belum ada') {
             $nomorInduk = '-';
         }
 
         return [
-            $organisasi->id,
+            $no,
             $organisasi->nama,
             $nomorInduk,
-            $organisasi->nama_jenis_kesenian,
+            $organisasi->nama_jenis_kesenian ?? '-',
             $organisasi->alamat,
-            // Gunakan nama_desa, fallback ke kode jika null
-            $organisasi->nama_desa ?? $organisasi->desa ?? '-', 
-            // Gunakan nama_kecamatan, fallback ke kode jika null
-            $organisasi->nama_kecamatan ?? $organisasi->kecamatan ?? '-', 
+            $organisasi->nama_desa ?? $organisasi->desa ?? '-',
+            $organisasi->nama_kecamatan ?? $organisasi->kecamatan ?? '-',
             $organisasi->nama_ketua,
             $organisasi->no_telp_ketua,
             $organisasi->tanggal_daftar
@@ -79,12 +70,11 @@ class KesenianExport implements WithStyles, WithEvents
                 ? Carbon::parse($organisasi->tanggal_expired)->format('d/m/Y')
                 : '-',
             $this->getStatusText($organisasi->status),
-            $organisasi->jumlah_anggota ?? 0,
         ];
     }
 
     /**
-     * Style default (Ini hanya berlaku untuk A1 sebelum event berjalan)
+     * Style default untuk header utama
      */
     public function styles(Worksheet $sheet)
     {
@@ -104,9 +94,7 @@ class KesenianExport implements WithStyles, WithEvents
     }
 
     /**
-     * Event setelah sheet dibuat
-     * Di sinilah semua keajaiban terjadi.
-     * Karena FromCollection dihapus, event ini akan berjalan pada sheet KOSONG.
+     * Event: membuat isi laporan Excel
      */
     public function registerEvents(): array
     {
@@ -114,66 +102,63 @@ class KesenianExport implements WithStyles, WithEvents
             AfterSheet::class => function (AfterSheet $event) {
                 $worksheet = $event->sheet->getDelegate();
 
-                // 1. Buat judul utama di baris 1
-                $worksheet->mergeCells('A1:M1');
+                // 1️⃣ Judul utama
+                $worksheet->mergeCells('A1:L1');
                 $worksheet->setCellValue('A1', 'DATA ORGANISASI KESENIAN');
                 $worksheet->getStyle('A1')->applyFromArray([
                     'font' => ['bold' => true, 'size' => 16],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                 ]);
 
-                // 2. Mulai dari baris 3 (membiarkan baris 2 kosong untuk spasi)
-                $currentRow = 3; 
-                
-                $grouped = $this->data->groupBy(function($item) {
+                $currentRow = 3; // mulai dari baris 3
+
+                // 2️⃣ Kelompokkan berdasarkan kecamatan
+                $grouped = $this->data->groupBy(function ($item) {
                     return $item->nama_kecamatan ?? $item->kecamatan ?? 'Tidak Terkategori';
                 });
 
                 foreach ($grouped as $kecamatan => $items) {
-                    // 3. Tambah judul kecamatan
-                    $worksheet->setCellValue("A{$currentRow}", 'KECAMATAN: ' . (strtoupper($kecamatan) ?: '-'));
-                    $worksheet->mergeCells("A{$currentRow}:M{$currentRow}");
+                    // Judul kecamatan
+                    $worksheet->setCellValue("A{$currentRow}", 'KECAMATAN: ' . strtoupper($kecamatan ?? '-'));
+                    $worksheet->mergeCells("A{$currentRow}:L{$currentRow}");
                     $worksheet->getStyle("A{$currentRow}")->applyFromArray([
-                        'font' => ['bold' => true, 'size' => 13],
+                        'font' => ['bold' => true, 'size' => 12],
                         'fill' => [
                             'fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => 'E8F4FD'], // Biru muda
+                            'startColor' => ['rgb' => 'E8F4FD'],
                         ],
-                        'alignment' => [
-                            'horizontal' => Alignment::HORIZONTAL_CENTER,
-                        ],
+                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                     ]);
                     $currentRow++;
 
-                    // 4. Header kolom untuk grup ini
+                    // Header kolom
                     $worksheet->fromArray($this->headings(), null, "A{$currentRow}");
-                    $worksheet->getStyle("A{$currentRow}:M{$currentRow}")->applyFromArray([
+                    $worksheet->getStyle("A{$currentRow}:L{$currentRow}")->applyFromArray([
                         'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                         'fill' => [
                             'fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => '4CAF50'], // Hijau
+                            'startColor' => ['rgb' => '4CAF50'],
                         ],
-                        'alignment' => [
-                            'horizontal' => Alignment::HORIZONTAL_CENTER,
-                        ],
+                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
                     ]);
                     $currentRow++;
 
-                    // 5. Isi data untuk kecamatan ini
+                    // Data isi — mulai nomor dari 1 per kecamatan
+                    $no = 1;
                     foreach ($items as $item) {
-                        $rowData = $this->map($item);
-                        $worksheet->fromArray($rowData, null, "A{$currentRow}");
+                        $worksheet->fromArray($this->map($no, $item), null, "A{$currentRow}");
                         $currentRow++;
+                        $no++;
                     }
 
-                    // 6. Spasi antar kecamatan
+                    // Spasi antar kecamatan
                     $currentRow++;
                 }
 
-                // 7. Tambahkan border untuk seluruh data yang ada
+                // 3️⃣ Tambahkan border
                 $highestRow = $worksheet->getHighestRow();
-                if ($highestRow > 1) { // Hanya tambahkan border jika ada data
-                    $worksheet->getStyle("A1:M{$highestRow}")->applyFromArray([
+                if ($highestRow > 1) {
+                    $worksheet->getStyle("A1:L{$highestRow}")->applyFromArray([
                         'borders' => [
                             'allBorders' => [
                                 'borderStyle' => Border::BORDER_THIN,
@@ -183,8 +168,8 @@ class KesenianExport implements WithStyles, WithEvents
                     ]);
                 }
 
-                // 8. Auto size setiap kolom
-                foreach (range('A', 'M') as $col) {
+                // 4️⃣ Auto size kolom
+                foreach (range('A', 'L') as $col) {
                     $worksheet->getColumnDimension($col)->setAutoSize(true);
                 }
             },
@@ -192,7 +177,7 @@ class KesenianExport implements WithStyles, WithEvents
     }
 
     /**
-     * Konversi status ke teks yang lebih jelas
+     * Ubah status ke teks deskriptif
      */
     private function getStatusText($status)
     {

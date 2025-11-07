@@ -1,57 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 
 <head>
     <meta charset="utf-8">
     <title>Data Kesenian Semua Kecamatan</title>
     <style>
+        @page {
+            margin: 20px 25px;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: DejaVu Sans, Arial, sans-serif;
             font-size: 10px;
+            margin: 0;
+            padding: 0;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             border-bottom: 2px solid #333;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
         }
 
         .header h1 {
             margin: 0;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .header p {
-            margin: 3px 0;
+            margin: 2px 0;
+            font-size: 9px;
         }
 
         .kecamatan-header {
             background-color: #e8f4fd;
-            padding: 5px;
-            margin: 10px 0 5px 0;
+            padding: 6px;
+            margin-top: 12px;
+            margin-bottom: 4px;
             border-left: 4px solid #2E86AB;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
+            table-layout: fixed;
         }
 
         th,
         td {
-            border: 1px solid #ddd;
-            padding: 4px;
-            text-align: left;
+            border: 1px solid #ccc;
+            padding: 3px 5px;
+            word-wrap: break-word;
+            vertical-align: top;
         }
 
         th {
-            background-color: #4CAF50;
-            color: white;
-            font-weight: bold;
+            background-color: #2E86AB;
+            color: #fff;
+            font-size: 9px;
+            text-align: center;
+        }
+
+        td {
+            font-size: 8.5px;
         }
 
         .text-center {
@@ -59,9 +74,10 @@
         }
 
         .badge {
-            padding: 2px 6px;
+            padding: 2px 5px;
             border-radius: 3px;
             font-size: 8px;
+            display: inline-block;
         }
 
         .bg-success {
@@ -85,10 +101,12 @@
         }
 
         .footer {
-            margin-top: 20px;
+            margin-top: 10px;
             text-align: right;
-            font-size: 9px;
+            font-size: 8.5px;
             color: #666;
+            border-top: 1px solid #aaa;
+            padding-top: 4px;
         }
 
         .page-break {
@@ -105,21 +123,21 @@
 
     @foreach ($dataByKecamatan as $kecamatan => $dataKesenian)
         <div class="kecamatan-header">
-            KECAMATAN: {{ $kecamatan }}
+            KECAMATAN: {{ $kecamatan ?? 'Tidak Terkategori' }}
         </div>
 
         <table>
             <thead>
                 <tr>
-                    <th width="25">No</th>
-                    <th>Nama Organisasi</th>
-                    <th>Nomor Induk</th>
-                    <th>Jenis Kesenian</th>
-                    <th>Alamat</th>
-                    <th>Ketua</th>
-                    <th>Tgl Daftar</th>
-                    <th>Tgl Expired</th>
-                    <th>Status</th>
+                    <th width="3%">No</th>
+                    <th width="17%">Nama Organisasi</th>
+                    <th width="10%">Nomor Induk</th>
+                    <th width="13%">Jenis Kesenian</th>
+                    <th width="23%">Alamat</th>
+                    <th width="13%">Ketua</th>
+                    <th width="8%">Tgl Daftar</th>
+                    <th width="8%">Tgl Expired</th>
+                    <th width="7%">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -128,10 +146,9 @@
                         <td class="text-center">{{ $index + 1 }}</td>
                         <td>{{ $item->nama }}</td>
                         <td>{{ $item->nomor_induk ?? '-' }}</td>
-                        <td>{{ $item->nama_jenis_kesenian }}</td>
+                        <td>{{ $item->nama_jenis_kesenian ?? '-' }}</td>
                         <td>
                             {{ $item->alamat }}
-                            {{-- PERBAIKAN: Tampilkan nama_desa, fallback ke kode desa --}}
                             @if ($item->nama_desa || $item->desa)
                                 <br><small>Desa {{ $item->nama_desa ?? $item->desa }}</small>
                             @endif
@@ -143,18 +160,14 @@
                             @endif
                         </td>
                         <td class="text-center">
-                            @if ($item->tanggal_daftar)
-                                {{ $item->tanggal_daftar->format('d/m/Y') }}
-                            @else
-                                -
-                            @endif
+                            {{ $item->tanggal_daftar && $item->tanggal_daftar != '0000-00-00'
+                                ? \Carbon\Carbon::parse($item->tanggal_daftar)->format('d/m/Y')
+                                : '-' }}
                         </td>
                         <td class="text-center">
-                            @if ($item->tanggal_expired)
-                                {{ $item->tanggal_expired->format('d/m/Y') }}
-                            @else
-                                -
-                            @endif
+                            {{ $item->tanggal_expired && $item->tanggal_expired != '0000-00-00'
+                                ? \Carbon\Carbon::parse($item->tanggal_expired)->format('d/m/Y')
+                                : '-' }}
                         </td>
                         <td class="text-center">
                             @php
@@ -170,10 +183,10 @@
                                     'Denny' => 'Ditolak',
                                     'DataLama' => 'Data Lama',
                                 ];
-                                $color = $statusColors[$item->status] ?? '';
-                                $text = $statusTexts[$item->status] ?? $item->status;
                             @endphp
-                            <span class="badge {{ $color }}">{{ $text }}</span>
+                            <span class="badge {{ $statusColors[$item->status] ?? '' }}">
+                                {{ $statusTexts[$item->status] ?? $item->status }}
+                            </span>
                         </td>
                     </tr>
                 @endforeach
@@ -181,12 +194,12 @@
         </table>
 
         @if (!$loop->last)
-            <div style="page-break-after: always;"></div>
+            <div class="page-break"></div>
         @endif
     @endforeach
 
     <div class="footer">
-        Total Data: {{ $dataByKecamatan->flatten()->count() }} Organisasi<br>
+        Total Data: {{ $dataByKecamatan->flatten()->count() }} Organisasi |
         Total Kecamatan: {{ $dataByKecamatan->count() }}<br>
         Dicetak pada: {{ $tanggalExport }}
     </div>
