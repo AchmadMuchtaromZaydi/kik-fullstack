@@ -248,9 +248,10 @@ class AuthController extends Controller
 
             // Coba kirim email
             Mail::send('emails.verification', $emailData, function ($message) use ($emailData) {
-                $message->to($emailData['recipient'])
-                    ->subject($emailData['subject']);
-            });
+            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'))
+            ->to($emailData['recipient'])
+            ->subject($emailData['subject']);
+        });
 
             Log::info("Verification email sent to: {$user->email}");
 
