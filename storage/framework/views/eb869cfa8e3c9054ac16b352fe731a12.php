@@ -1,4 +1,4 @@
-{{-- resources/views/admin/verifikasi/tabs/data_inventaris.blade.php --}}
+
 <div class="card">
     <div class="card-header bg-primary text-white">
         <h5 class="card-title mb-0">
@@ -21,45 +21,47 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($organisasi->inventaris as $index => $item)
+                    <?php $__empty_1 = true; $__currentLoopData = $organisasi->inventaris; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $item->nama }}</td>
-                            <td>{{ $item->jumlah }}</td>
-                            <td>{{ $item->pembelian_th ?? '-' }}</td>
+                            <td><?php echo e($index + 1); ?></td>
+                            <td><?php echo e($item->nama); ?></td>
+                            <td><?php echo e($item->jumlah); ?></td>
+                            <td><?php echo e($item->pembelian_th ?? '-'); ?></td>
                             <td>
                                 <span
-                                    class="badge bg-{{ $item->kondisi == 'Baik' ? 'success' : ($item->kondisi == 'Rusak' ? 'danger' : 'warning') }}">
-                                    {{ $item->kondisi ?? 'Tidak Diketahui' }}
+                                    class="badge bg-<?php echo e($item->kondisi == 'Baik' ? 'success' : ($item->kondisi == 'Rusak' ? 'danger' : 'warning')); ?>">
+                                    <?php echo e($item->kondisi ?? 'Tidak Diketahui'); ?>
+
                                 </span>
                             </td>
-                            <td>{{ $item->keterangan ?? '-' }}</td>
+                            <td><?php echo e($item->keterangan ?? '-'); ?></td>
                             <td>
-                                <span class="badge bg-{{ $item->validasi ? 'success' : 'warning' }}">
-                                    {{ $item->validasi ? 'Terverifikasi' : 'Belum Diverifikasi' }}
+                                <span class="badge bg-<?php echo e($item->validasi ? 'success' : 'warning'); ?>">
+                                    <?php echo e($item->validasi ? 'Terverifikasi' : 'Belum Diverifikasi'); ?>
+
                                 </span>
                             </td>
                         </tr>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
                             <td colspan="7" class="text-center">Tidak ada data inventaris</td>
                         </tr>
-                    @endforelse
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
         <div class="mt-3">
-            <strong>Total Barang:</strong> {{ $organisasi->inventaris->count() }} item
-            @if ($organisasi->inventaris->count() > 0)
-                | <strong>Total Jumlah:</strong> {{ $organisasi->inventaris->sum('jumlah') }} unit
-            @endif
+            <strong>Total Barang:</strong> <?php echo e($organisasi->inventaris->count()); ?> item
+            <?php if($organisasi->inventaris->count() > 0): ?>
+                | <strong>Total Jumlah:</strong> <?php echo e($organisasi->inventaris->sum('jumlah')); ?> unit
+            <?php endif; ?>
         </div>
 
         <hr>
 
-        <form action="{{ route('admin.verifikasi.store', $organisasi->id) }}" method="POST">
-            @csrf
+        <form action="<?php echo e(route('admin.verifikasi.store', $organisasi->id)); ?>" method="POST">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="tipe" value="data_inventaris">
 
             <h5>Verifikasi Data Inventaris</h5>
@@ -70,11 +72,11 @@
                         <select name="status" class="form-select" required>
                             <option value="">Pilih Status</option>
                             <option value="valid"
-                                {{ ($verifikasiData->where('tipe', 'data_inventaris')->first()->status ?? '') == 'valid' ? 'selected' : '' }}>
+                                <?php echo e(($verifikasiData->where('tipe', 'data_inventaris')->first()->status ?? '') == 'valid' ? 'selected' : ''); ?>>
                                 Valid
                             </option>
                             <option value="tdk_valid"
-                                {{ ($verifikasiData->where('tipe', 'data_inventaris')->first()->status ?? '') == 'tdk_valid' ? 'selected' : '' }}>
+                                <?php echo e(($verifikasiData->where('tipe', 'data_inventaris')->first()->status ?? '') == 'tdk_valid' ? 'selected' : ''); ?>>
                                 Tidak Valid
                             </option>
                         </select>
@@ -84,20 +86,20 @@
 
             <div class="mb-3">
                 <label class="form-label">Catatan Internal</label>
-                <textarea name="catatan" class="form-control" rows="2" placeholder="Catatan untuk internal admin">{{ $verifikasiData->where('tipe', 'data_inventaris')->first()->catatan ?? '' }}</textarea>
+                <textarea name="catatan" class="form-control" rows="2" placeholder="Catatan untuk internal admin"><?php echo e($verifikasiData->where('tipe', 'data_inventaris')->first()->catatan ?? ''); ?></textarea>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Keterangan untuk Pendaftar</label>
                 <textarea name="keterangan" class="form-control" rows="3"
-                    placeholder="Keterangan yang akan dilihat oleh pendaftar">{{ $verifikasiData->where('tipe', 'data_inventaris')->first()->keterangan ?? '' }}</textarea>
+                    placeholder="Keterangan yang akan dilihat oleh pendaftar"><?php echo e($verifikasiData->where('tipe', 'data_inventaris')->first()->keterangan ?? ''); ?></textarea>
                 <small class="text-muted">
                     Contoh: "Data inventaris sudah lengkap dan valid" atau "Perlu melengkapi data inventaris"
                 </small>
             </div>
 
             <div class="d-flex justify-content-between">
-                <a href="{{ route('admin.verifikasi.show', ['id' => $organisasi->id, 'tab' => 'data_anggota']) }}"
+                <a href="<?php echo e(route('admin.verifikasi.show', ['id' => $organisasi->id, 'tab' => 'data_anggota'])); ?>"
                     class="btn btn-secondary">
                     <i class="fas fa-arrow-left me-2"></i>Kembali
                 </a>
@@ -108,3 +110,4 @@
         </form>
     </div>
 </div>
+<?php /**PATH C:\project-magang\fullstack-KIK\kik-fullstack\resources\views/admin/verifikasi/tabs/data_inventaris.blade.php ENDPATH**/ ?>

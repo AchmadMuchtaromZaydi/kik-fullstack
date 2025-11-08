@@ -43,13 +43,14 @@
                                 <label for="jenis_kesenian" class="form-label">Filter Jenis Kesenian</label>
                                 <select class="form-select" id="jenis_kesenian" name="jenis_kesenian">
                                     <option value="">Semua Jenis</option>
-                                    <?php $__currentLoopData = $jenisKesenian; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $jenis): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php $__currentLoopData = $jenisKesenianList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $jenis): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($jenis); ?>"
                                             <?php echo e(request('jenis_kesenian') == $jenis ? 'selected' : ''); ?>>
                                             <?php echo e($jenis); ?>
 
                                         </option>
                                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
                                 </select>
                             </div>
 
@@ -319,7 +320,7 @@
     <style>
         .table-responsive {
             /* max-height: 80vh;
-                overflow-y: auto; */
+                            overflow-y: auto; */
         }
 
         .table thead th {

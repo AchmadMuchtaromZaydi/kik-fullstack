@@ -125,8 +125,8 @@ Route::prefix('user-kik')->name('user.')->middleware(['auth', 'role:user-kik'])-
         Route::get('/verifikasi/{id}/storage-check', [VerifikasiController::class, 'checkStorage'])->name('admin.verifikasi.storage-check');
 
         // Debug routes untuk verifikasi
-        Route::get('/admin/verifikasi/{id}/status', [VerifikasiController::class, 'checkStorage'])
-            ->name('admin.verifikasi.status');
+        // Route::get('/admin/verifikasi/{id}/status', [VerifikasiController::class, 'checkStorage'])
+        //     ->name('admin.verifikasi.status');
 
         Route::get('/admin/verifikasi/{id}/fix-paths', [VerifikasiController::class, 'fixFilePaths'])
             ->name('admin.verifikasi.fix-paths');

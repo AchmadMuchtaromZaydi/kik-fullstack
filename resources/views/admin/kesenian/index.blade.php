@@ -44,12 +44,13 @@
                                 <label for="jenis_kesenian" class="form-label">Filter Jenis Kesenian</label>
                                 <select class="form-select" id="jenis_kesenian" name="jenis_kesenian">
                                     <option value="">Semua Jenis</option>
-                                    @foreach ($jenisKesenian as $jenis)
+                                    @foreach ($jenisKesenianList as $jenis)
                                         <option value="{{ $jenis }}"
                                             {{ request('jenis_kesenian') == $jenis ? 'selected' : '' }}>
                                             {{ $jenis }}
                                         </option>
                                     @endforeach
+
                                 </select>
                             </div>
 
@@ -315,7 +316,7 @@
     <style>
         .table-responsive {
             /* max-height: 80vh;
-                overflow-y: auto; */
+                            overflow-y: auto; */
         }
 
         .table thead th {

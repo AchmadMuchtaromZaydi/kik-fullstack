@@ -4,18 +4,21 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
-use App\Models\Organisasi;
-use App\Models\Anggota;
-use App\Models\Inventaris;
-use App\Models\DataPendukung;
-use App\Models\Verifikasi;
-use App\Models\Wilayah;
-use App\Models\JenisKesenian;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\{
+    Organisasi,
+    Anggota,
+    Inventaris,
+    DataPendukung,
+    Verifikasi,
+    Wilayah,
+    JenisKesenian
+};
 
 class VerifikasiController extends Controller
 {
@@ -24,117 +27,104 @@ class VerifikasiController extends Controller
         $this->middleware('auth');
     }
 
+    /**
+     * Show detail verifikasi
+     * Optimized: limited selects, eager loads, no N+1
+     */
     public function show($id, Request $request)
     {
-        // ✅ OPTIMASI: Eager loading dengan relasi yang benar
-        $organisasi = Organisasi::with([
-            'jenisKesenianObj',
-            'subKesenianObj',
-            'anggota' => function($query) {
-                $query->orderBy('jabatan', 'desc');
-            },
-            'kecamatan_relasi',  // ✅ Relasi yang sudah diperbaiki
-            'desa_relasi',       // ✅ Relasi yang sudah diperbaiki
-            'ketua',             // ✅ Relasi khusus ketua
-            'inventaris',
-            'dataPendukung'
-        ])->findOrFail($id);
+        set_time_limit(120);
 
-        // Enhance data organisasi (sekarang tanpa query tambahan)
-        $this->enhanceOrganisasiData($organisasi);
+        try {
+            $organisasi = Organisasi::query()
+                ->select([
+                    'id','nama','nomor_induk','jenis_kesenian','nama_jenis_kesenian',
+                    'sub_kesenian','nama_sub_kesenian','nama_ketua','no_telp_ketua',
+                    'alamat','desa','kecamatan','nama_kecamatan','jumlah_anggota',
+                    'status','tanggal_daftar','tanggal_expired'
+                ])
+                ->with([
+                    'jenisKesenianObj:id,nama',
+                    'subKesenianObj:id,nama',
+                    'kecamatanWilayah:kode,nama',
+                    'desaWilayah:kode,nama',
+                    'ketua:id,organisasi_id,nama,telepon,whatsapp',
+                    'anggota:id,organisasi_id,nama,jabatan,telepon,whatsapp',
+                    'inventaris:id,organisasi_id,nama,jumlah,pembelian_th,kondisi,keterangan,validasi',
+                    // FIX: removed 'deskripsi' (DB doesn't have that column)
+                    'dataPendukung:id,organisasi_id,image,tipe,validasi',
+                ])
+                ->findOrFail($id);
 
-        // Data sudah di-load via eager loading, tidak perlu query terpisah
-        $inventaris = $organisasi->inventaris;
-        $dataPendukung = $organisasi->dataPendukung;
+            // cache verifikasi result (small TTL)
+            $verifikasiData = Cache::remember("verifikasi_data_{$id}", 300, function() use ($id) {
+                return Verifikasi::select('id','organisasi_id','tipe','status','keterangan','catatan')
+                    ->where('organisasi_id', $id)
+                    ->get();
+            });
 
-        // Get existing verifikasi data
-        $verifikasiData = Verifikasi::where('organisasi_id', $id)->get();
+            // build debug info for view to avoid undefined variable
+            $debugInfo = [
+                'storage_base_path' => storage_path('app'),
+                'storage_public_path' => storage_path('app/public'),
+                'public_path' => public_path(),
+                'organisasi_uploads_dir' => storage_path('app/public/uploads/organisasi/' . $id),
+                'dokumen_counts' => [
+                    'ktp' => $organisasi->dokumen_ktp ? 1 : 0,
+                    'pas_foto' => $organisasi->dokumen_pas_foto ? 1 : 0,
+                    'banner' => $organisasi->dokumen_banner ? 1 : 0,
+                    'kegiatan' => $organisasi->dokumen_kegiatan ? $organisasi->dokumen_kegiatan->count() : 0,
+                ],
+                'timestamp' => now()->toDateTimeString(),
+            ];
 
-        $tabActive = $request->get('tab', 'general');
+            $tabActive = $request->get('tab', 'general');
 
-        return view('admin.verifikasi.show', compact(
-            'organisasi',
-            'inventaris',
-            'dataPendukung',
-            'verifikasiData',
-            'tabActive'
-        ));
+            return view('admin.verifikasi.show', compact('organisasi','verifikasiData','tabActive','debugInfo'));
+
+        } catch (\Throwable $e) {
+            Log::error('VerifikasiController@show error: '.$e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
+        }
     }
 
     /**
-     * Enhance organisasi data dengan informasi tambahan - OPTIMIZED
-     */
-    private function enhanceOrganisasiData($organisasi)
-    {
-        // ✅ OPTIMASI: Gunakan data yang sudah di-load via eager loading
-        $organisasi->nama_kecamatan = $organisasi->kecamatan_relasi->nama ?? '-';
-        $organisasi->nama_desa = $organisasi->desa_relasi->nama ?? '-';
-
-        // ✅ OPTIMASI: Ambil ketua dari data anggota yang sudah di-load
-        $ketua = $organisasi->anggota->first(function($anggota) {
-            return $anggota->jabatan === 'Ketua';
-        });
-
-        $organisasi->nama_ketua = $ketua ? $ketua->nama : '-';
-        $organisasi->no_telp_ketua = $ketua ? ($ketua->telepon ?? $ketua->whatsapp ?? '-') : '-';
-
-        // Data jenis/sub kesenian sudah ada di eager loading
-        $organisasi->jenis_kesenian_nama = $organisasi->jenisKesenianObj->nama ?? '-';
-        $organisasi->sub_kesenian_nama = $organisasi->subKesenianObj->nama ?? '-';
-
-        // Status badge
-        $organisasi->status_badge = $this->getStatusBadge($organisasi->status);
-    }
-
-    /**
-     * Generate status badge HTML
-     */
-    private function getStatusBadge($status)
-    {
-        $badges = [
-            'Request' => '<span class="badge bg-warning">Menunggu</span>',
-            'Allow' => '<span class="badge bg-success">Diterima</span>',
-            'Denny' => '<span class="badge bg-danger">Ditolak</span>',
-            'Pending' => '<span class="badge bg-info">Proses</span>',
-            'DataLama' => '<span class="badge bg-secondary">Data Lama</span>'
-        ];
-
-        return $badges[$status] ?? '<span class="badge bg-secondary">' . $status . '</span>';
-    }
-
-    /**
-     * Preview Kartu untuk Modal - METHOD BARU
+     * Preview card (for modal)
      */
     public function previewCard($id)
     {
-        // ✅ OPTIMASI: Eager loading yang sama seperti show method
-        $organisasi = Organisasi::with([
-            'jenisKesenianObj',
-            'subKesenianObj',
-            'kecamatan_relasi',
-            'desa_relasi',
-            'ketua'
-        ])->findOrFail($id);
+        try {
+            $organisasi = Organisasi::select([
+                    'id','nama','nomor_induk','nama_jenis_kesenian','nama_ketua',
+                    'alamat','kecamatan','tanggal_expired','tanggal_daftar'
+                ])
+                ->with(['kecamatanWilayah:kode,nama'])
+                ->findOrFail($id);
 
-        // Enhance data untuk kartu
-        $this->enhanceOrganisasiData($organisasi);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $organisasi->id,
+                    'nomor_induk' => $organisasi->nomor_induk,
+                    'nama' => $organisasi->nama,
+                    'nama_jenis_kesenian' => $organisasi->nama_jenis_kesenian,
+                    'nama_ketua' => $organisasi->nama_ketua,
+                    'alamat' => $organisasi->alamat,
+                    'nama_kecamatan' => $organisasi->kecamatanWilayah->nama ?? '-',
+                    'tanggal_expired' => optional($organisasi->tanggal_expired)->format('Y-m-d'),
+                    'tanggal_daftar' => optional($organisasi->tanggal_daftar)->format('Y-m-d'),
+                ]
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $organisasi->id,
-                'nomor_induk' => $organisasi->nomor_induk,
-                'nama' => $organisasi->nama,
-                'nama_jenis_kesenian' => $organisasi->nama_jenis_kesenian,
-                'nama_ketua' => $organisasi->nama_ketua,
-                'alamat' => $organisasi->alamat,
-                'nama_kecamatan' => $organisasi->nama_kecamatan,
-                'tanggal_expired' => $organisasi->tanggal_expired ? $organisasi->tanggal_expired->format('Y-m-d') : null,
-                'tanggal_daftar' => $organisasi->tanggal_daftar ? $organisasi->tanggal_daftar->format('Y-m-d') : null,
-            ]
-        ]);
+        } catch (\Throwable $e) {
+            Log::error('previewCard error: '.$e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
     }
 
+    /**
+     * Store / update verifikasi
+     */
     public function storeVerifikasi(Request $request, $id)
     {
         $request->validate([
@@ -144,19 +134,19 @@ class VerifikasiController extends Controller
             'catatan' => 'nullable|string'
         ]);
 
-        $verifikasi = Verifikasi::updateOrCreate(
-            [
-                'organisasi_id' => $id,
-                'tipe' => $request->tipe
-            ],
+        Verifikasi::updateOrCreate(
+            ['organisasi_id' => $id, 'tipe' => $request->tipe],
             [
                 'status' => $request->status,
                 'keterangan' => $request->keterangan,
                 'catatan' => $request->catatan,
                 'userid_review' => auth()->id(),
-                'tanggal_review' => now()
+                'tanggal_review' => now(),
             ]
         );
+
+        // clear cache
+        Cache::forget("verifikasi_data_{$id}");
 
         return redirect()->route('admin.verifikasi.show', [
             'id' => $id,
@@ -164,56 +154,53 @@ class VerifikasiController extends Controller
         ])->with('success', 'Verifikasi berhasil disimpan.');
     }
 
+    /**
+     * Approve organisasi if all valid
+     */
     public function approve($id)
     {
         $organisasi = Organisasi::findOrFail($id);
 
-        // Check if all verifikasi steps are valid
-        $allValid = $this->checkAllVerifikasiValid($id);
-
-        if (!$allValid) {
-            return redirect()->route('admin.verifikasi.show', ['id' => $id, 'tab' => 'review'])
-                ->with('error', 'Tidak dapat menyetujui karena ada data yang belum divalidasi atau tidak valid.');
+        if (!$this->checkAllVerifikasiValid($id)) {
+            return redirect()->route('admin.verifikasi.show', ['id'=>$id,'tab'=>'review'])
+                ->with('error','Tidak dapat menyetujui karena ada data yang belum divalidasi atau tidak valid.');
         }
 
-        // Generate nomor induk jika belum ada
         if (empty($organisasi->nomor_induk)) {
             $organisasi->nomor_induk = $this->generateUniqueNomorInduk($organisasi);
         }
 
         try {
-            $organisasi->status = 'Allow';
-            $organisasi->tanggal_expired = now()->addYears(1);
-            $organisasi->save();
-
-            // Update verified_by dan tanggal_verifikasi untuk semua verifikasi yang valid
-            Verifikasi::where('organisasi_id', $id)
-                ->where('status', 'valid')
-                ->update([
-                    'verified_by' => auth()->id(),
-                    'tanggal_verifikasi' => now()
+            DB::transaction(function() use ($organisasi, $id) {
+                $organisasi->update([
+                    'status' => 'Allow',
+                    'tanggal_expired' => now()->addYear()
                 ]);
 
-            // Auto-validate data terkait
-            Anggota::where('organisasi_id', $id)->update(['validasi' => 1]);
-            Inventaris::where('organisasi_id', $id)->update(['validasi' => 1]);
-            DataPendukung::where('organisasi_id', $id)->update(['validasi' => 1]);
+                Verifikasi::where('organisasi_id',$id)
+                    ->where('status','valid')
+                    ->update([
+                        'verified_by' => auth()->id(),
+                        'tanggal_verifikasi' => now()
+                    ]);
 
-            return redirect()->route('admin.verifikasi.show', [
-                'id' => $id,
-                'tab' => 'review'
-            ])->with('success', 'Organisasi berhasil disetujui dan kartu induk telah dibuat.');
+                Anggota::where('organisasi_id',$id)->update(['validasi'=>1]);
+                Inventaris::where('organisasi_id',$id)->update(['validasi'=>1]);
+                DataPendukung::where('organisasi_id',$id)->update(['validasi'=>1]);
+            });
+
+            Cache::forget("verifikasi_data_{$id}");
+
+            return redirect()->route('admin.verifikasi.show',['id'=>$id,'tab'=>'review'])
+                ->with('success','Organisasi berhasil disetujui dan kartu induk telah dibuat.');
 
         } catch (QueryException $e) {
-            // Jika terjadi duplicate entry, generate nomor induk baru
             if ($e->getCode() == 23000) {
                 $organisasi->nomor_induk = $this->generateUniqueNomorInduk($organisasi, true);
                 $organisasi->save();
 
-                return redirect()->route('admin.verifikasi.show', [
-                    'id' => $id,
-                    'tab' => 'review'
-                ])->with('success', 'Organisasi berhasil disetujui dengan nomor induk baru.');
+                return redirect()->route('admin.verifikasi.show',['id'=>$id,'tab'=>'review'])
+                    ->with('success','Organisasi berhasil disetujui dengan nomor induk baru.');
             }
             throw $e;
         }
@@ -221,248 +208,145 @@ class VerifikasiController extends Controller
 
     public function reject($id)
     {
-        $organisasi = Organisasi::findOrFail($id);
-        $organisasi->status = 'Denny';
-        $organisasi->save();
-
-        return redirect()->route('admin.verifikasi.show', $id)
-            ->with('success', 'Organisasi berhasil ditolak.');
+        Organisasi::where('id',$id)->update(['status'=>'Denny']);
+        Cache::forget("verifikasi_data_{$id}");
+        return redirect()->route('admin.verifikasi.show',$id)
+            ->with('success','Organisasi berhasil ditolak.');
     }
 
     public function generateCard($id)
     {
-        $organisasi = Organisasi::with(['jenisKesenianObj', 'subKesenianObj', 'kecamatan'])->findOrFail($id);
+        $organisasi = Organisasi::with(['jenisKesenianObj','subKesenianObj','kecamatanWilayah'])
+            ->findOrFail($id);
 
         $pdf = Pdf::loadView('admin.verifikasi.kartu', compact('organisasi'));
-
-        // Ganti karakter "/" dengan "-" dalam nama file
-        $safeNomorInduk = str_replace(['/', '\\'], '-', $organisasi->nomor_induk);
-        $filename = 'kartu_kesenian_' . $safeNomorInduk . '.pdf';
-
-        return $pdf->download($filename);
+        $safe = str_replace(['/', '\\'], '-', $organisasi->nomor_induk);
+        return $pdf->download("kartu_kesenian_{$safe}.pdf");
     }
 
-    /**
-     * Generate nomor induk dengan format: 430/18.5.31/429.110/2024
-     * Format: [sequence]/[kode_kecamatan]/[kode_desa]/[tahun]
-     */
-    private function generateNomorInduk($organisasi)
+    /* ===== UTILITIES ===== */
+
+    private function generateNomorInduk($org)
     {
-        $tahun = now()->format('Y');
-
-        // ✅ OPTIMASI: Cache data wilayah
-        $kodeKecamatan = $this->getFormattedKodeWilayah($organisasi->kecamatan);
-        $kodeDesa = $this->getFormattedKodeWilayah($organisasi->desa);
-
-        // ✅ OPTIMASI: Cache sequence number
-        $sequence = $this->getNextSequence($tahun);
-
-        return "{$sequence}/{$kodeKecamatan}/{$kodeDesa}/{$tahun}";
+        $tahun = now()->year;
+        $kodeKec = $this->getFormattedKodeWilayah($org->kecamatan);
+        $kodeDesa = $this->getFormattedKodeWilayah($org->desa);
+        $seq = $this->getNextSequence($tahun);
+        return "{$seq}/{$kodeKec}/{$kodeDesa}/{$tahun}";
     }
 
-    /**
-     * Generate nomor induk yang unik
-     */
-    private function generateUniqueNomorInduk($organisasi, $forceNew = false)
+    private function generateUniqueNomorInduk($org, $forceNew=false)
     {
-        $maxAttempts = 50;
         $attempt = 0;
-
         do {
-            if ($attempt === 0 && !$forceNew) {
-                $nomorInduk = $this->generateNomorInduk($organisasi);
-            } else {
-                // Untuk attempt selanjutnya, gunakan sequence yang berbeda
-                $nomorInduk = $this->generateNomorIndukWithCustomSequence($organisasi, $attempt + 1);
-            }
-
-            $exists = Organisasi::where('nomor_induk', $nomorInduk)->exists();
+            $nomor = $attempt===0 && !$forceNew
+                ? $this->generateNomorInduk($org)
+                : $this->generateNomorIndukWithCustomSequence($org, $attempt+1);
+            $exists = Organisasi::where('nomor_induk',$nomor)->exists();
             $attempt++;
+        } while ($exists && $attempt < 30);
 
-        } while ($exists && $attempt < $maxAttempts);
-
-        // Jika masih duplicate setelah max attempts, tambahkan timestamp
         if ($exists) {
-            $timestamp = now()->format('His');
-            $tahun = now()->format('Y');
-            $nomorInduk = "{$timestamp}/{$this->getFormattedKodeWilayah($organisasi->kecamatan)}/{$this->getFormattedKodeWilayah($organisasi->desa)}/{$tahun}";
+            $time = now()->format('His');
+            $tahun = now()->year;
+            $nomor = "{$time}/{$this->getFormattedKodeWilayah($org->kecamatan)}/{$this->getFormattedKodeWilayah($org->desa)}/{$tahun}";
         }
 
-        return $nomorInduk;
+        return $nomor;
     }
 
-    /**
-     * Generate nomor induk dengan sequence custom
-     */
-    private function generateNomorIndukWithCustomSequence($organisasi, $sequence)
+    private function generateNomorIndukWithCustomSequence($org, $seq)
     {
-        $tahun = now()->format('Y');
-        $kodeKecamatan = $this->getFormattedKodeWilayah($organisasi->kecamatan);
-        $kodeDesa = $this->getFormattedKodeWilayah($organisasi->desa);
-
-        return "{$sequence}/{$kodeKecamatan}/{$kodeDesa}/{$tahun}";
+        $tahun = now()->year;
+        return "{$seq}/{$this->getFormattedKodeWilayah($org->kecamatan)}/{$this->getFormattedKodeWilayah($org->desa)}/{$tahun}";
     }
 
-    /**
-     * Format kode wilayah dari format database ke format nomor induk
-     * ✅ OPTIMASI: Ditambahkan caching
-     */
-    private function getFormattedKodeWilayah($kodeWilayah)
+    private function getFormattedKodeWilayah($kode)
     {
-        if (!$kodeWilayah) {
-            return '00.00.00';
-        }
+        if (!$kode) return '00.00.00';
 
-        // ✅ OPTIMASI: Cache hasil formatting
-        return Cache::remember("formatted_wilayah_{$kodeWilayah}", 3600, function() use ($kodeWilayah) {
-            // Split kode wilayah
-            $parts = explode('.', $kodeWilayah);
-
-            if (count($parts) >= 4) {
-                // Format asli: 35.10.01.1001
-                // Format yang diinginkan: 18.5.31
-                $kabupaten = intval($parts[1] ?? 0); // 10
-                $kecamatan = intval($parts[2] ?? 0); // 01 -> 1
-                $desa = intval($parts[3] ?? 0); // 1001 -> 1001
-
-                // Konversi ke format yang diinginkan
-                $formattedKabupaten = $this->mapKabupatenCode($kabupaten);
-                $formattedKecamatan = $kecamatan;
-                $formattedDesa = $this->mapDesaCode($desa);
-
-                return "{$formattedKabupaten}.{$formattedKecamatan}.{$formattedDesa}";
+        return Cache::remember("formatted_wilayah_{$kode}", 3600, function() use ($kode) {
+            $p = explode('.', $kode);
+            if (count($p) >= 4) {
+                $kab = intval($p[1]??0);
+                $kec = intval($p[2]??0);
+                $des = intval($p[3]??0);
+                return "{$this->mapKabupatenCode($kab)}.{$kec}.{$this->mapDesaCode($des)}";
             }
-
             return '00.00.00';
         });
     }
 
-    /**
-     * Mapping kode kabupaten
-     */
     private function mapKabupatenCode($kode)
     {
-        $mapping = [
-            10 => 18,  // Banyuwangi -> 18
-            // Tambahkan mapping lainnya sesuai kebutuhan
-        ];
-
-        return $mapping[$kode] ?? $kode;
+        return [10 => 18][$kode] ?? $kode;
     }
 
-    /**
-     * Mapping kode desa
-     */
     private function mapDesaCode($kode)
     {
-        // Contoh: 1001 -> 31, 1002 -> 32, dst
-        if ($kode >= 1000 && $kode <= 1999) {
-            return $kode - 1000 + 31;
-        }
-
-        return $kode;
+        return ($kode >= 1000 && $kode <= 1999)
+            ? $kode - 1000 + 31
+            : $kode;
     }
 
-    /**
-     * Get next sequence number for the year
-     * ✅ OPTIMASI: Ditambahkan caching
-     */
     private function getNextSequence($tahun)
     {
-        $cacheKey = "sequence_number_{$tahun}";
-
-        // ✅ OPTIMASI: Cache sequence number untuk mengurangi query
-        return Cache::remember($cacheKey, 300, function() use ($tahun) {
-            // Cari nomor induk tertinggi untuk tahun ini
-            $lastNomorInduk = Organisasi::where('nomor_induk', 'like', "%/{$tahun}")
+        return Cache::remember("sequence_number_{$tahun}", 300, function() use ($tahun) {
+            $last = Organisasi::where('nomor_induk','like',"%/{$tahun}")
                 ->whereNotNull('nomor_induk')
-                ->orderBy('nomor_induk', 'desc')
+                ->orderByDesc('nomor_induk')
                 ->first();
-
-            if ($lastNomorInduk && $lastNomorInduk->nomor_induk) {
-                // Extract sequence dari nomor induk: "430/18.5.31/429.110/2024" -> 430
-                $parts = explode('/', $lastNomorInduk->nomor_induk);
-                if (count($parts) >= 4) {
-                    $lastSequence = intval($parts[0]);
-                    return $lastSequence + 1;
-                }
+            if ($last && $last->nomor_induk) {
+                $p = explode('/', $last->nomor_induk);
+                return intval($p[0] ?? 0) + 1;
             }
-
-            // Jika tidak ada data sebelumnya, mulai dari 1
             return 1;
         });
     }
 
-    private function getNextTab($currentTab)
+    private function getNextTab($current)
     {
-        $tabs = [
-            'general' => 'data_organisasi',
-            'data_organisasi' => 'data_anggota',
-            'data_anggota' => 'data_inventaris',
-            'data_inventaris' => 'data_pendukung',
-            'data_pendukung' => 'review'
-        ];
-
-        return $tabs[$currentTab] ?? 'general';
+        return [
+            'general'=>'data_organisasi',
+            'data_organisasi'=>'data_anggota',
+            'data_anggota'=>'data_inventaris',
+            'data_inventaris'=>'data_pendukung',
+            'data_pendukung'=>'review'
+        ][$current] ?? 'general';
     }
 
-    private function checkAllVerifikasiValid($organisasiId)
+    private function checkAllVerifikasiValid($orgId)
     {
-        $requiredTabs = ['data_organisasi', 'data_anggota', 'data_inventaris', 'data_pendukung'];
-
-        $verifikasi = Verifikasi::where('organisasi_id', $organisasiId)
-            ->whereIn('tipe', $requiredTabs)
+        $types = ['data_organisasi','data_anggota','data_inventaris','data_pendukung'];
+        $verifikasi = Verifikasi::select('tipe','status')
+            ->where('organisasi_id',$orgId)
+            ->whereIn('tipe',$types)
             ->get();
 
-        // Check if all required tabs have been verified
-        if ($verifikasi->count() < count($requiredTabs)) {
-            return false;
-        }
-
-        // Check if all verifications are valid
-        return $verifikasi->every(function ($item) {
-            return $item->status === 'valid';
-        });
+        if ($verifikasi->count() < count($types)) return false;
+        return $verifikasi->every(fn($v)=>$v->status==='valid');
     }
 
-    public function getVerifikasiStatus($organisasiId)
+    public function getVerifikasiStatus($orgId)
     {
-        $verifikasiData = Verifikasi::where('organisasi_id', $organisasiId)->get();
-
-        $status = [
-            'data_organisasi' => 'belum_divalidasi',
-            'data_anggota' => 'belum_divalidasi',
-            'data_inventaris' => 'belum_divalidasi',
-            'data_pendukung' => 'belum_divalidasi'
-        ];
-
-        foreach ($verifikasiData as $verifikasi) {
-            $status[$verifikasi->tipe] = $verifikasi->status;
-        }
-
+        $verifikasi = Verifikasi::select('tipe','status')->where('organisasi_id',$orgId)->get();
+        $status = array_fill_keys(['data_organisasi','data_anggota','data_inventaris','data_pendukung'],'belum_divalidasi');
+        foreach ($verifikasi as $v) $status[$v->tipe] = $v->status;
         return $status;
     }
 
-    /**
-     * Get jenis kesenian untuk dropdown
-     */
     public function getJenisKesenian()
     {
-        // ✅ OPTIMASI: Cache data jenis kesenian
-        return Cache::remember('jenis_kesenian_list', 3600, function() {
-            return JenisKesenian::jenisUtama()->orderBy('nama')->get();
-        });
+        return Cache::remember('jenis_kesenian_all',3600,fn()=>
+            JenisKesenian::jenisUtama()->select('id','nama')->orderBy('nama')->get()
+        );
     }
 
-    /**
-     * Get sub jenis kesenian berdasarkan parent
-     */
-    public function getSubKesenian($parentId)
+    public function getSubKesenian($parent)
     {
-        // ✅ OPTIMASI: Cache data sub kesenian
-        return Cache::remember("sub_kesenian_{$parentId}", 3600, function() use ($parentId) {
-            return JenisKesenian::where('parent', $parentId)->orderBy('nama')->get();
-        });
+        return Cache::remember("sub_kesenian_{$parent}",3600,fn()=>
+            JenisKesenian::where('parent',$parent)->select('id','nama')->orderBy('nama')->get()
+        );
     }
 
     /**
@@ -470,90 +354,95 @@ class VerifikasiController extends Controller
      */
     public function fixFilePaths($id)
     {
-        $organisasi = Organisasi::with('dataPendukung')->findOrFail($id);
-        $fixedCount = 0;
-
-        foreach ($organisasi->dataPendukung as $dokumen) {
-            $oldPath = $dokumen->image;
-            $newPath = 'uploads/organisasi/' . $organisasi->id . '/' . basename($oldPath);
-
-            // Coba pindahkan file ke struktur yang benar
-            if (Storage::disk('public')->exists($oldPath)) {
-                Storage::disk('public')->move($oldPath, $newPath);
-                $dokumen->image = $newPath;
-                $dokumen->save();
-                $fixedCount++;
+        $org = Organisasi::with('dataPendukung')->findOrFail($id);
+        $count=0;
+        foreach ($org->dataPendukung as $dok) {
+            $old = $dok->image;
+            $new = "uploads/organisasi/{$org->id}/".basename($old);
+            if (Storage::disk('public')->exists($old)) {
+                Storage::disk('public')->move($old,$new);
+                $dok->update(['image'=>$new]);
+                $count++;
             }
         }
-
-        return response()->json([
-            'message' => 'Fixed ' . $fixedCount . ' file paths',
-            'organisasi_id' => $id
-        ]);
+        return response()->json(['message'=>"Fixed {$count} file paths",'organisasi_id'=>$id]);
     }
 
-    /**
-     * Fix data anggota untuk organisasi
-     */
     public function fixAnggotaOrganisasi($id)
     {
-        $organisasi = Organisasi::findOrFail($id);
-
-        // Cari anggota yang mungkin terkait
-        $potentialAnggota = Anggota::whereNull('organisasi_id')
-            ->orWhere('organisasi_id', 0)
-            ->get();
-
-        $matchedCount = 0;
-
-        foreach ($potentialAnggota as $anggota) {
-            if ($this->isAnggotaMatchOrganisasi($anggota, $organisasi)) {
-                $anggota->organisasi_id = $id;
-                $anggota->save();
-                $matchedCount++;
+        $org = Organisasi::findOrFail($id);
+        $c=0;
+        $pot = Anggota::whereNull('organisasi_id')->orWhere('organisasi_id',0)->get();
+        foreach ($pot as $a) {
+            if ($this->isAnggotaMatchOrganisasi($a,$org)) {
+                $a->update(['organisasi_id'=>$id]);
+                $c++;
             }
         }
+        return back()->with('success',"Berhasil match {$c} anggota ke organisasi {$org->nama}");
+    }
 
-        return redirect()->back()
-            ->with('success', "Berhasil match {$matchedCount} anggota ke organisasi {$organisasi->nama}");
+    private function isAnggotaMatchOrganisasi($a,$org)
+    {
+        $orgName = strtolower($org->nama);
+        $search = strtolower(($a->nama ?? '').' '.($a->alamat ?? ''));
+        $keywords = array_filter(explode(' ',$orgName),fn($w)=>strlen($w)>3);
+        $match = 0;
+        foreach ($keywords as $word) if (strpos($search,$word)!==false) $match++;
+        return $match >= 1;
     }
 
     /**
-     * Logic matching antara anggota dan organisasi
+     * API: status check for storage (used by JS checkStorage())
      */
-    private function isAnggotaMatchOrganisasi($anggota, $organisasi)
+    public function status($id)
     {
-        $organisasiName = strtolower($organisasi->nama);
-        $searchIn = strtolower($anggota->nama . ' ' . $anggota->alamat);
+        $organisasi = Organisasi::with('dataPendukung')->findOrFail($id);
 
-        // Kata kunci dari nama organisasi
-        $keywords = array_filter(explode(' ', $organisasiName), function($word) {
-            return strlen($word) > 3;
-        });
+        $result = [
+            'ktp' => null,
+            'pas_foto' => null,
+            'banner' => null,
+            'kegiatan' => [],
+            'checked_at' => now()->toDateTimeString(),
+        ];
 
-        $matchCount = 0;
-        foreach ($keywords as $keyword) {
-            if (strpos($searchIn, $keyword) !== false) {
-                $matchCount++;
-            }
+        if ($organisasi->dokumen_ktp) {
+            $result['ktp'] = [
+                'original' => $organisasi->dokumen_ktp->image,
+                'resolved' => $organisasi->getFilePath($organisasi->dokumen_ktp),
+                'exists' => $organisasi->getFileExists($organisasi->dokumen_ktp),
+                'url' => $organisasi->getFileUrl($organisasi->dokumen_ktp),
+            ];
         }
 
-        // Jika minimal 1 keyword match, anggap terkait
-        return $matchCount >= 1;
-    }
-    // Di VerifikasiController.php - tambahkan method ini
-    public function previewKartu($id)
-    {
-        $organisasi = Organisasi::with([
-            'jenisKesenianObj',
-            'subKesenianObj',
-            'kecamatan_relasi',
-            'desa_relasi',
-            'ketua'
-        ])->findOrFail($id);
+        if ($organisasi->dokumen_pas_foto) {
+            $result['pas_foto'] = [
+                'original' => $organisasi->dokumen_pas_foto->image,
+                'resolved' => $organisasi->getFilePath($organisasi->dokumen_pas_foto),
+                'exists' => $organisasi->getFileExists($organisasi->dokumen_pas_foto),
+                'url' => $organisasi->getFileUrl($organisasi->dokumen_pas_foto),
+            ];
+        }
 
-        $this->enhanceOrganisasiData($organisasi);
+        if ($organisasi->dokumen_banner) {
+            $result['banner'] = [
+                'original' => $organisasi->dokumen_banner->image,
+                'resolved' => $organisasi->getFilePath($organisasi->dokumen_banner),
+                'exists' => $organisasi->getFileExists($organisasi->dokumen_banner),
+                'url' => $organisasi->getFileUrl($organisasi->dokumen_banner),
+            ];
+        }
 
-        return view('admin.verifikasi.preview-kartu', compact('organisasi'));
+        foreach ($organisasi->dokumen_kegiatan as $foto) {
+            $result['kegiatan'][] = [
+                'original' => $foto->image,
+                'resolved' => $organisasi->getFilePath($foto),
+                'exists' => $organisasi->getFileExists($foto),
+                'url' => $organisasi->getFileUrl($foto),
+            ];
+        }
+
+        return response()->json($result);
     }
 }

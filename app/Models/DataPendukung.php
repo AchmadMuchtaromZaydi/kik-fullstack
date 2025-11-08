@@ -6,10 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class DataPendukung extends Model
 {
-    // use HasFactory;
     protected $table = 'kik_datapendukung';
 
-     protected $fillable = [
+    protected $fillable = [
         'tipe',
         'image',
         'organisasi_id',
