@@ -129,7 +129,7 @@
                                 <th>Tgl Daftar</th>
                                 <th>Tgl Expired</th>
                                 <th>Status</th>
-                                <th width="120" class="text-center">Aksi</th>
+                                <th width="150" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -214,8 +214,17 @@
                                                 title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <form action="<?php echo e(route('admin.kesenian.destroy', $item->id)); ?>" method="POST"
-                                                class="d-inline">
+
+                                            
+                                            <?php if($item->status == 'Request'): ?>
+                                                <a href="<?php echo e(route('admin.verifikasi.show', $item->id)); ?>"
+                                                    class="btn btn-info" title="Verifikasi">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </a>
+                                            <?php endif; ?>
+
+                                            <form action="<?php echo e(route('admin.kesenian.destroy', $item->id)); ?>"
+                                                method="POST" class="d-inline">
                                                 <?php echo csrf_field(); ?>
                                                 <?php echo method_field('DELETE'); ?>
                                                 <button type="submit" class="btn btn-danger"
@@ -247,7 +256,7 @@
     <style>
         .table-responsive {
             /* max-height: 80vh;
-                            overflow-y: auto; */
+                                            overflow-y: auto; */
         }
 
         .table thead th {

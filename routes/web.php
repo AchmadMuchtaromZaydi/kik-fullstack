@@ -11,6 +11,7 @@ use App\Http\Controllers\KesenianController;
 use App\Http\Controllers\ValidasiController;
 use App\Http\Controllers\InventarisController;
 use App\Http\Controllers\OrganisasiController;
+use App\Http\Controllers\VerifikasiController;
 use App\Http\Controllers\DataAnggotaController;
 use App\Http\Controllers\DataPendukungController;
 use App\Http\Controllers\JenisKesenianController;
@@ -113,6 +114,15 @@ Route::prefix('user-kik')->name('user.')->middleware(['auth', 'role:user-kik'])-
         Route::post('/kesenian/import', [KesenianController::class, 'import'])->name('admin.kesenian.import.post');
         // Di dalam group admin
         Route::get('/kesenian/download/{type}', [KesenianController::class, 'download'])->name('admin.kesenian.download');
+
+        // Verifikasi Routes
+        Route::get('/verifikasi/{id}/status', [VerifikasiController::class, 'getVerifikasiStatus'])->name('admin.verifikasi.status');
+        Route::get('/verifikasi/{id}', [VerifikasiController::class, 'show'])->name('admin.verifikasi.show');
+        Route::post('/verifikasi/{id}/store', [VerifikasiController::class, 'storeVerifikasi'])->name('admin.verifikasi.store');
+        Route::post('/verifikasi/{id}/approve', [VerifikasiController::class, 'approve'])->name('admin.verifikasi.approve');
+        Route::post('/verifikasi/{id}/reject', [VerifikasiController::class, 'reject'])->name('admin.verifikasi.reject');
+        Route::get('/verifikasi/{id}/generate-card', [VerifikasiController::class, 'generateCard'])->name('admin.verifikasi.generate-card');
+        Route::get('/verifikasi/{id}/storage-check', [VerifikasiController::class, 'checkStorage'])->name('admin.verifikasi.storage-check');
         // Jenis Kesenian
         Route::get('/jenis-kesenian', [JenisKesenianController::class, 'index'])->name('admin.jenis-kesenian');
         Route::post('/jenis-kesenian', [JenisKesenianController::class, 'store'])->name('admin.jenis-kesenian.store');

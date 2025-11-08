@@ -128,7 +128,7 @@
                                 <th>Tgl Daftar</th>
                                 <th>Tgl Expired</th>
                                 <th>Status</th>
-                                <th width="120" class="text-center">Aksi</th>
+                                <th width="150" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -210,8 +210,17 @@
                                                 title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <form action="{{ route('admin.kesenian.destroy', $item->id) }}" method="POST"
-                                                class="d-inline">
+
+                                            {{-- TOMBOL VERIFIKASI HANYA UNTUK STATUS REQUEST --}}
+                                            @if ($item->status == 'Request')
+                                                <a href="{{ route('admin.verifikasi.show', $item->id) }}"
+                                                    class="btn btn-info" title="Verifikasi">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </a>
+                                            @endif
+
+                                            <form action="{{ route('admin.kesenian.destroy', $item->id) }}"
+                                                method="POST" class="d-inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-danger"
@@ -243,7 +252,7 @@
     <style>
         .table-responsive {
             /* max-height: 80vh;
-                            overflow-y: auto; */
+                                            overflow-y: auto; */
         }
 
         .table thead th {
