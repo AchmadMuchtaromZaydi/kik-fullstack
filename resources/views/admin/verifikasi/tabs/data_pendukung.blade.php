@@ -28,12 +28,19 @@
                                         <i class="fas fa-check"></i> File Ditemukan
                                     </span>
                                 </div>
+                                <div class="mt-1">
+                                    <small class="text-muted">Path: {{ $organisasi->dokumen_ktp->image }}</small>
+                                </div>
                             @else
                                 <div class="text-danger">
                                     <i class="fas fa-exclamation-triangle fa-3x mb-2"></i>
                                     <p>File tidak ditemukan di storage</p>
-                                    <small class="text-muted">Path:
-                                        {{ $organisasi->dokumen_ktp->image ?? 'Tidak ada' }}</small>
+                                    <div class="mt-2">
+                                        <small class="text-muted">Original Path:
+                                            {{ $organisasi->dokumen_ktp->image }}</small><br>
+                                        <small class="text-muted">Resolved Path:
+                                            {{ $organisasi->getFilePath($organisasi->dokumen_ktp) ?? 'Tidak ditemukan' }}</small>
+                                    </div>
                                 </div>
                             @endif
                         @else
@@ -67,12 +74,19 @@
                                         <i class="fas fa-check"></i> File Ditemukan
                                     </span>
                                 </div>
+                                <div class="mt-1">
+                                    <small class="text-muted">Path: {{ $organisasi->dokumen_pas_foto->image }}</small>
+                                </div>
                             @else
                                 <div class="text-danger">
                                     <i class="fas fa-exclamation-triangle fa-3x mb-2"></i>
                                     <p>File tidak ditemukan di storage</p>
-                                    <small class="text-muted">Path:
-                                        {{ $organisasi->dokumen_pas_foto->image ?? 'Tidak ada' }}</small>
+                                    <div class="mt-2">
+                                        <small class="text-muted">Original Path:
+                                            {{ $organisasi->dokumen_pas_foto->image }}</small><br>
+                                        <small class="text-muted">Resolved Path:
+                                            {{ $organisasi->getFilePath($organisasi->dokumen_pas_foto) ?? 'Tidak ditemukan' }}</small>
+                                    </div>
                                 </div>
                             @endif
                         @else
@@ -106,12 +120,19 @@
                                         <i class="fas fa-check"></i> File Ditemukan
                                     </span>
                                 </div>
+                                <div class="mt-1">
+                                    <small class="text-muted">Path: {{ $organisasi->dokumen_banner->image }}</small>
+                                </div>
                             @else
                                 <div class="text-danger">
                                     <i class="fas fa-exclamation-triangle fa-3x mb-2"></i>
                                     <p>File tidak ditemukan di storage</p>
-                                    <small class="text-muted">Path:
-                                        {{ $organisasi->dokumen_banner->image ?? 'Tidak ada' }}</small>
+                                    <div class="mt-2">
+                                        <small class="text-muted">Original Path:
+                                            {{ $organisasi->dokumen_banner->image }}</small><br>
+                                        <small class="text-muted">Resolved Path:
+                                            {{ $organisasi->getFilePath($organisasi->dokumen_banner) ?? 'Tidak ditemukan' }}</small>
+                                    </div>
                                 </div>
                             @endif
                         @else
@@ -161,6 +182,10 @@
                                                     {{ $fotoData['foto']->validasi ? '✓' : '●' }}
                                                 </span>
                                             </div>
+                                            <div class="text-center">
+                                                <small
+                                                    class="text-muted">{{ basename($fotoData['foto']->image) }}</small>
+                                            </div>
                                         @else
                                             <div class="text-center text-danger border rounded p-2">
                                                 <i class="fas fa-exclamation-circle"></i>
@@ -196,18 +221,37 @@
             <div class="card mt-4">
                 <div class="card-header bg-warning">
                     <h6 class="card-title mb-0">Informasi Debug Storage</h6>
+                    <button type="button" class="btn btn-sm btn-primary float-end" onclick="checkStorage()">
+                        <i class="fas fa-sync-alt"></i> Check Storage
+                    </button>
                 </div>
                 <div class="card-body">
-                    <small>
-                        <strong>Base Storage Path:</strong> {{ storage_path('app') }}<br>
-                        <strong>Public Path:</strong> {{ public_path() }}<br>
-                        <strong>Storage URL:</strong> {{ Storage::url('test') }}<br>
-                        @if ($organisasi->dokumen_ktp)
-                            <strong>KTP Original Path:</strong> {{ $organisasi->dokumen_ktp->image }}<br>
-                            <strong>KTP Resolved Path:</strong>
-                            {{ $organisasi->getFilePath($organisasi->dokumen_ktp) }}<br>
-                        @endif
-                    </small>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Base Storage Path:</strong> {{ storage_path('app') }}<br>
+                            <strong>Public Path:</strong> {{ public_path() }}<br>
+                            <strong>Storage URL:</strong> {{ Storage::url('test') }}<br>
+                            <strong>Organisasi ID:</strong> {{ $organisasi->id }}<br>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Public Storage Path:</strong> {{ storage_path('app/public') }}<br>
+                            <strong>Uploads Path:</strong> {{ storage_path('app/public/uploads') }}<br>
+                            <strong>Organisasi Uploads Path:</strong>
+                            {{ storage_path('app/public/uploads/organisasi/' . $organisasi->id) }}<br>
+                        </div>
+                    </div>
+
+                    @if ($organisasi->dokumen_ktp)
+                        <hr>
+                        <h6>Debug KTP:</h6>
+                        <strong>Original Path:</strong> {{ $organisasi->dokumen_ktp->image }}<br>
+                        <strong>Resolved Path:</strong>
+                        {{ $organisasi->getFilePath($organisasi->dokumen_ktp) ?? 'Tidak ditemukan' }}<br>
+                        <strong>File Exists:</strong>
+                        {{ $organisasi->getFileExists($organisasi->dokumen_ktp) ? 'Ya' : 'Tidak' }}<br>
+                        <strong>URL:</strong>
+                        {{ $organisasi->getFileUrl($organisasi->dokumen_ktp) ?? 'Tidak ada URL' }}<br>
+                    @endif
                 </div>
             </div>
 
@@ -294,17 +338,19 @@
         function checkStorage() {
             fetch('{{ route('admin.verifikasi.status', $organisasi->id) }}')
                 .then(response => response.json())
-                .then(data => console.log('Storage check:', data));
+                .then(data => {
+                    console.log('Storage check:', data);
+                    alert('Storage check completed. Check console for details.');
+                })
+                .catch(error => {
+                    console.error('Storage check error:', error);
+                    alert('Error checking storage: ' + error.message);
+                });
         }
 
         // Panggil saat halaman load
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Debug Info:', {
-                organisasiId: {{ $organisasi->id }},
-                dokumenKtp: @json($organisasi->dokumen_ktp),
-                dokumenPasFoto: @json($organisasi->dokumen_pas_foto),
-                dokumenBanner: @json($organisasi->dokumen_banner),
-                dokumenKegiatan: @json($organisasi->dokumen_kegiatan)
-            });
+            console.log('Debug Info:', @json($debugInfo));
         });
     </script>
+</div>

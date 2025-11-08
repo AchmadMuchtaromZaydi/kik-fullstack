@@ -108,11 +108,18 @@
                 <!-- Info Jumlah Data dan Urutan -->
                 <div class="alert alert-info mb-3">
                     <i class="fas fa-info-circle me-2"></i>
-                    Menampilkan <strong><?php echo e($dataKesenian->count()); ?></strong> data organisasi kesenian
                     <?php if($hasSearch): ?>
+                        Menampilkan <strong><?php echo e($dataKesenian->count()); ?></strong> data organisasi kesenian
                         <span class="badge bg-warning ms-2">Mode Pencarian: Diurutkan berdasarkan terbaru</span>
                     <?php else: ?>
-                        <span class="badge bg-success ms-2">Mode Normal</span>
+                        <?php if(isset($pagination)): ?>
+                            Menampilkan <strong><?php echo e($dataKesenian->count()); ?></strong> dari total
+                            <strong><?php echo e($dataKesenian->total()); ?></strong> data organisasi kesenian
+                            <span class="badge bg-success ms-2">Mode Normal (Pagination)</span>
+                        <?php else: ?>
+                            Menampilkan <strong><?php echo e($dataKesenian->count()); ?></strong> data organisasi kesenian
+                            <span class="badge bg-info ms-2">Mode Default</span>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
 
@@ -133,9 +140,16 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <?php
+                                $startNumber = 1;
+                                if (isset($pagination) && !$hasSearch) {
+                                    $startNumber = ($dataKesenian->currentPage() - 1) * $dataKesenian->perPage() + 1;
+                                }
+                            ?>
+
                             <?php $__empty_1 = true; $__currentLoopData = $dataKesenian; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                 <tr>
-                                    <td class="text-center"><?php echo e($index + 1); ?></td>
+                                    <td class="text-center"><?php echo e($startNumber + $index); ?></td>
                                     <td><?php echo e($item->nama ?? '-'); ?></td>
                                     <td>
                                         <?php if($item->nomor_induk): ?>
@@ -146,7 +160,6 @@
                                     </td>
                                     <td><?php echo e($item->nama_jenis_kesenian ?? ($item->jenis_kesenian ?? '-')); ?></td>
                                     <td class="table-alamat">
-                                        <!-- TAMPILKAN LANGSUNG ALAMAT DARI DATABASE -->
                                         <small><?php echo e($item->alamat ?? '-'); ?></small>
                                     </td>
                                     <td>
@@ -249,6 +262,56 @@
                         </tbody>
                     </table>
                 </div>
+
+                
+                <?php if(isset($pagination) && $pagination->hasPages() && !$hasSearch): ?>
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted">
+                            Menampilkan <?php echo e($pagination->firstItem()); ?> - <?php echo e($pagination->lastItem()); ?> dari
+                            <?php echo e($pagination->total()); ?> data
+                        </div>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination mb-0">
+                                
+                                <?php if($pagination->onFirstPage()): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">&laquo;</span>
+                                    </li>
+                                <?php else: ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="<?php echo e($pagination->previousPageUrl()); ?>"
+                                            rel="prev">&laquo;</a>
+                                    </li>
+                                <?php endif; ?>
+
+                                
+                                <?php $__currentLoopData = $pagination->getUrlRange(1, $pagination->lastPage()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $page => $url): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php if($page == $pagination->currentPage()): ?>
+                                        <li class="page-item active">
+                                            <span class="page-link"><?php echo e($page); ?></span>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?php echo e($url); ?>"><?php echo e($page); ?></a>
+                                        </li>
+                                    <?php endif; ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
+                                
+                                <?php if($pagination->hasMorePages()): ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="<?php echo e($pagination->nextPageUrl()); ?>"
+                                            rel="next">&raquo;</a>
+                                    </li>
+                                <?php else: ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">&raquo;</span>
+                                    </li>
+                                <?php endif; ?>
+                            </ul>
+                        </nav>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -256,7 +319,7 @@
     <style>
         .table-responsive {
             /* max-height: 80vh;
-                                            overflow-y: auto; */
+                overflow-y: auto; */
         }
 
         .table thead th {
@@ -269,11 +332,26 @@
         .card-body {
             padding: 1.5rem;
         }
+
+        .pagination {
+            margin-bottom: 0;
+        }
+
+        .page-item.active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .page-link {
+            color: #0d6efd;
+        }
+
+        .page-link:hover {
+            color: #0a58ca;
+        }
     </style>
+
     <!-- Modal Import Data -->
-    
-    
-    
     <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -282,14 +360,11 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                
-                
                 <form action="<?php echo e(route('admin.kesenian.import.post')); ?>" method="POST" enctype="multipart/form-data">
                     <?php echo csrf_field(); ?>
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="file" class="form-label">Pilih file Excel (XLSX / XLS)</label>
-                            
                             <input type="file" name="file" class="form-control" id="file" required
                                 accept=".xlsx, .xls, .csv">
                         </div>
@@ -301,21 +376,14 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                         <button type="submit" class="btn btn-primary">Upload dan Import</button>
                     </div>
                 </form>
-
             </div>
         </div>
     </div>
-    
-    
-    
-
-
-<?php $__env->stopSection(); ?> 
+<?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
     <script>

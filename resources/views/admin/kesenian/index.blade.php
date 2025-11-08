@@ -107,11 +107,18 @@
                 <!-- Info Jumlah Data dan Urutan -->
                 <div class="alert alert-info mb-3">
                     <i class="fas fa-info-circle me-2"></i>
-                    Menampilkan <strong>{{ $dataKesenian->count() }}</strong> data organisasi kesenian
                     @if ($hasSearch)
+                        Menampilkan <strong>{{ $dataKesenian->count() }}</strong> data organisasi kesenian
                         <span class="badge bg-warning ms-2">Mode Pencarian: Diurutkan berdasarkan terbaru</span>
                     @else
-                        <span class="badge bg-success ms-2">Mode Normal</span>
+                        @if (isset($pagination))
+                            Menampilkan <strong>{{ $dataKesenian->count() }}</strong> dari total
+                            <strong>{{ $dataKesenian->total() }}</strong> data organisasi kesenian
+                            <span class="badge bg-success ms-2">Mode Normal (Pagination)</span>
+                        @else
+                            Menampilkan <strong>{{ $dataKesenian->count() }}</strong> data organisasi kesenian
+                            <span class="badge bg-info ms-2">Mode Default</span>
+                        @endif
                     @endif
                 </div>
 
@@ -132,9 +139,16 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $startNumber = 1;
+                                if (isset($pagination) && !$hasSearch) {
+                                    $startNumber = ($dataKesenian->currentPage() - 1) * $dataKesenian->perPage() + 1;
+                                }
+                            @endphp
+
                             @forelse($dataKesenian as $index => $item)
                                 <tr>
-                                    <td class="text-center">{{ $index + 1 }}</td>
+                                    <td class="text-center">{{ $startNumber + $index }}</td>
                                     <td>{{ $item->nama ?? '-' }}</td>
                                     <td>
                                         @if ($item->nomor_induk)
@@ -145,7 +159,6 @@
                                     </td>
                                     <td>{{ $item->nama_jenis_kesenian ?? ($item->jenis_kesenian ?? '-') }}</td>
                                     <td class="table-alamat">
-                                        <!-- TAMPILKAN LANGSUNG ALAMAT DARI DATABASE -->
                                         <small>{{ $item->alamat ?? '-' }}</small>
                                     </td>
                                     <td>
@@ -245,6 +258,56 @@
                         </tbody>
                     </table>
                 </div>
+
+                {{-- PAGINATION BOOTSTRAP --}}
+                @if (isset($pagination) && $pagination->hasPages() && !$hasSearch)
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted">
+                            Menampilkan {{ $pagination->firstItem() }} - {{ $pagination->lastItem() }} dari
+                            {{ $pagination->total() }} data
+                        </div>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination mb-0">
+                                {{-- Previous Page Link --}}
+                                @if ($pagination->onFirstPage())
+                                    <li class="page-item disabled">
+                                        <span class="page-link">&laquo;</span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $pagination->previousPageUrl() }}"
+                                            rel="prev">&laquo;</a>
+                                    </li>
+                                @endif
+
+                                {{-- Pagination Elements --}}
+                                @foreach ($pagination->getUrlRange(1, $pagination->lastPage()) as $page => $url)
+                                    @if ($page == $pagination->currentPage())
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ $page }}</span>
+                                        </li>
+                                    @else
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                                        </li>
+                                    @endif
+                                @endforeach
+
+                                {{-- Next Page Link --}}
+                                @if ($pagination->hasMorePages())
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $pagination->nextPageUrl() }}"
+                                            rel="next">&raquo;</a>
+                                    </li>
+                                @else
+                                    <li class="page-item disabled">
+                                        <span class="page-link">&raquo;</span>
+                                    </li>
+                                @endif
+                            </ul>
+                        </nav>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -252,7 +315,7 @@
     <style>
         .table-responsive {
             /* max-height: 80vh;
-                                            overflow-y: auto; */
+                overflow-y: auto; */
         }
 
         .table thead th {
@@ -265,11 +328,26 @@
         .card-body {
             padding: 1.5rem;
         }
+
+        .pagination {
+            margin-bottom: 0;
+        }
+
+        .page-item.active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .page-link {
+            color: #0d6efd;
+        }
+
+        .page-link:hover {
+            color: #0a58ca;
+        }
     </style>
+
     <!-- Modal Import Data -->
-    {{-- =================================================================== --}}
-    {{-- MULAI KODE MODAL IMPORT YANG HILANG --}}
-    {{-- =================================================================== --}}
     <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -278,14 +356,11 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                {{-- Formulir diambil dari import.blade.php dan disesuaikan untuk Bootstrap 5 --}}
-                {{-- Rute (action) diperbarui ke rute import yang benar dari web.php --}}
                 <form action="{{ route('admin.kesenian.import.post') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="file" class="form-label">Pilih file Excel (XLSX / XLS)</label>
-                            {{-- Ganti 'form-control-file' menjadi 'form-control' agar sesuai Bootstrap 5 --}}
                             <input type="file" name="file" class="form-control" id="file" required
                                 accept=".xlsx, .xls, .csv">
                         </div>
@@ -297,21 +372,14 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        {{-- Ganti tombol 'Kembali' dengan 'Tutup' --}}
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                         <button type="submit" class="btn btn-primary">Upload dan Import</button>
                     </div>
                 </form>
-
             </div>
         </div>
     </div>
-    {{-- =================================================================== --}}
-    {{-- SELESAI KODE MODAL IMPORT --}}
-    {{-- =================================================================== --}}
-
-
-@endsection {{-- Baris ini sudah ada di file Anda, jangan disalin --}}
+@endsection
 
 @push('scripts')
     <script>

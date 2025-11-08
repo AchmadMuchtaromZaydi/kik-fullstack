@@ -11,12 +11,12 @@
                 <table class="table table-bordered">
                     <tr>
                         <th width="40%">Nama Organisasi</th>
-                        <td>{{ $organisasi->nama }}</td>
+                        <td>{{ $organisasi->nama ?? '-' }}</td>
                     </tr>
                     <tr>
                         <th>Nomor Induk</th>
                         <td>
-                            @if ($organisasi->nomor_induk)
+                            @if (!empty($organisasi->nomor_induk))
                                 <span class="badge bg-success">{{ $organisasi->nomor_induk }}</span>
                             @else
                                 <span class="badge bg-warning">Belum ada</span>
@@ -25,14 +25,19 @@
                     </tr>
                     <tr>
                         <th>Tanggal Berdiri</th>
-                        <td>{{ $organisasi->tanggal_berdiri ? $organisasi->tanggal_berdiri->format('d/m/Y') : '-' }}
+                        <td>
+                            @if ($organisasi->tanggal_berdiri)
+                                {{ \Carbon\Carbon::parse($organisasi->tanggal_berdiri)->format('d/m/Y') }}
+                            @else
+                                -
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <th>Jenis Kesenian</th>
                         <td>
-                            <strong>{{ $organisasi->jenis_kesenian_nama }}</strong>
-                            @if ($organisasi->sub_kesenian_nama && $organisasi->sub_kesenian_nama != 'Tidak ada sub jenis')
+                            <strong>{{ $organisasi->jenis_kesenian_nama ?? '-' }}</strong>
+                            @if (!empty($organisasi->sub_kesenian_nama) && $organisasi->sub_kesenian_nama != 'Tidak ada sub jenis')
                                 <br><small class="text-muted">Sub: {{ $organisasi->sub_kesenian_nama }}</small>
                             @endif
                         </td>
@@ -43,11 +48,11 @@
                 <table class="table table-bordered">
                     <tr>
                         <th width="40%">Jumlah Anggota</th>
-                        <td>{{ $organisasi->jumlah_anggota }} orang</td>
+                        <td>{{ $organisasi->jumlah_anggota ?? 0 }} orang</td>
                     </tr>
                     <tr>
                         <th>Alamat</th>
-                        <td>{{ $organisasi->alamat }}</td>
+                        <td>{{ $organisasi->alamat ?? '-' }}</td>
                     </tr>
                     <tr>
                         <th>Kecamatan</th>
@@ -59,7 +64,7 @@
                     </tr>
                     <tr>
                         <th>Status</th>
-                        <td>{!! $organisasi->status_badge !!}</td>
+                        <td>{!! $organisasi->status_badge ?? '<span class="badge bg-secondary">-</span>' !!}</td>
                     </tr>
                 </table>
             </div>
@@ -78,6 +83,15 @@
                     <td>{{ $organisasi->no_telp_ketua ?? '-' }}</td>
                 </tr>
             </table>
+
+            @if (empty($organisasi->nama_ketua) || $organisasi->nama_ketua == '-')
+                <div class="alert alert-warning mt-2">
+                    <small>
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Data ketua belum ditemukan. Pastikan ada anggota dengan jabatan "Ketua".
+                    </small>
+                </div>
+            @endif
         </div>
 
         <hr>

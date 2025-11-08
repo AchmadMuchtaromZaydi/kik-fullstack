@@ -69,4 +69,9 @@ class AnggotaController extends Controller
         return redirect()->route('admin.anggota.index')
             ->with('success', 'Data anggota berhasil dihapus.');
     }
+
+     public function anggota()
+    {
+        return $this->hasMany(Anggota::class, 'organisasi_id');
+    }
 }

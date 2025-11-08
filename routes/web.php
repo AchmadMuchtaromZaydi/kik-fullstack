@@ -123,6 +123,14 @@ Route::prefix('user-kik')->name('user.')->middleware(['auth', 'role:user-kik'])-
         Route::post('/verifikasi/{id}/reject', [VerifikasiController::class, 'reject'])->name('admin.verifikasi.reject');
         Route::get('/verifikasi/{id}/generate-card', [VerifikasiController::class, 'generateCard'])->name('admin.verifikasi.generate-card');
         Route::get('/verifikasi/{id}/storage-check', [VerifikasiController::class, 'checkStorage'])->name('admin.verifikasi.storage-check');
+
+        // Debug routes untuk verifikasi
+        Route::get('/admin/verifikasi/{id}/status', [VerifikasiController::class, 'checkStorage'])
+            ->name('admin.verifikasi.status');
+
+        Route::get('/admin/verifikasi/{id}/fix-paths', [VerifikasiController::class, 'fixFilePaths'])
+            ->name('admin.verifikasi.fix-paths');
+        Route::get('/admin/verifikasi/{id}/preview-kartu', [VerifikasiController::class, 'previewKartu'])->name('admin.verifikasi.preview-kartu');
         // Jenis Kesenian
         Route::get('/jenis-kesenian', [JenisKesenianController::class, 'index'])->name('admin.jenis-kesenian');
         Route::post('/jenis-kesenian', [JenisKesenianController::class, 'store'])->name('admin.jenis-kesenian.store');
