@@ -37,7 +37,6 @@
                         <th>Pekerjaan</th>
                         <th>Jabatan</th>
                         <th>Kontak</th>
-                        <th width="120">Status Validasi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -102,17 +101,6 @@
                                     </div>
                                 <?php else: ?>
                                     <span class="text-muted">-</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-center">
-                                <?php if($anggota->validasi): ?>
-                                    <span class="badge bg-success">
-                                        <i class="fas fa-check me-1"></i>Terverifikasi
-                                    </span>
-                                <?php else: ?>
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="fas fa-clock me-1"></i>Belum Diverifikasi
-                                    </span>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -181,19 +169,7 @@
                     <div class="col-md-6">
                         <strong>Total Anggota:</strong> <?php echo e($organisasi->anggota->count()); ?> orang
                     </div>
-                    <div class="col-md-6">
-                        <strong>Target Anggota:</strong> <?php echo e($organisasi->jumlah_anggota); ?> orang
-                    </div>
                 </div>
-                <?php if($organisasi->anggota->count() < $organisasi->jumlah_anggota): ?>
-                    <div class="alert alert-warning mt-2 mb-0">
-                        <small>
-                            <i class="fas fa-info-circle me-1"></i>
-                            Jumlah anggota belum memenuhi target (kurang
-                            <?php echo e($organisasi->jumlah_anggota - $organisasi->anggota->count()); ?> orang)
-                        </small>
-                    </div>
-                <?php endif; ?>
             </div>
         </div>
 
@@ -226,12 +202,6 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Keputusan Berdasarkan</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="1" checked disabled>
-                            <label class="form-check-label">
-                                Jumlah anggota (<?php echo e($organisasi->anggota->count()); ?>/<?php echo e($organisasi->jumlah_anggota); ?>)
-                            </label>
-                        </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" value="1"
                                 <?php echo e($ketua ? 'checked' : ''); ?> disabled>

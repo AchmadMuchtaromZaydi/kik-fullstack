@@ -113,7 +113,13 @@ Route::prefix('user-kik')->name('user.')->middleware(['auth', 'role:user-kik'])-
         Route::get('/kesenian/import', [KesenianController::class, 'showImportForm'])->name('admin.kesenian.import');
         Route::post('/kesenian/import', [KesenianController::class, 'import'])->name('admin.kesenian.import.post');
         // Di dalam group admin
-        Route::get('/kesenian/download/{type}', [KesenianController::class, 'download'])->name('admin.kesenian.download');
+        // Download PDF
+        Route::get('/kesenian/download/pdf', [KesenianController::class, 'download'])
+            ->name('admin.kesenian.download.pdf');
+
+        // Download Excel
+        Route::get('/kesenian/download/excel', [KesenianController::class, 'downloadExcel'])
+            ->name('admin.kesenian.download.excel');
 
         // Verifikasi Routes
         Route::get('/verifikasi/{id}/status', [VerifikasiController::class, 'getVerifikasiStatus'])->name('admin.verifikasi.status');

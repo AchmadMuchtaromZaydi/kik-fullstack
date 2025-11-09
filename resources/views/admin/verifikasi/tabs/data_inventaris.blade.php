@@ -17,7 +17,6 @@
                         <th>Tahun Pembelian</th>
                         <th>Kondisi</th>
                         <th>Keterangan</th>
-                        <th>Status Validasi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -34,11 +33,6 @@
                                 </span>
                             </td>
                             <td>{{ $item->keterangan ?? '-' }}</td>
-                            <td>
-                                <span class="badge bg-{{ $item->validasi ? 'success' : 'warning' }}">
-                                    {{ $item->validasi ? 'Terverifikasi' : 'Belum Diverifikasi' }}
-                                </span>
-                            </td>
                         </tr>
                     @empty
                         <tr>

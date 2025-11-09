@@ -36,7 +36,6 @@
                         <th>Pekerjaan</th>
                         <th>Jabatan</th>
                         <th>Kontak</th>
-                        <th width="120">Status Validasi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,17 +99,6 @@
                                     </div>
                                 @else
                                     <span class="text-muted">-</span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                @if ($anggota->validasi)
-                                    <span class="badge bg-success">
-                                        <i class="fas fa-check me-1"></i>Terverifikasi
-                                    </span>
-                                @else
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="fas fa-clock me-1"></i>Belum Diverifikasi
-                                    </span>
                                 @endif
                             </td>
                         </tr>
@@ -179,19 +167,7 @@
                     <div class="col-md-6">
                         <strong>Total Anggota:</strong> {{ $organisasi->anggota->count() }} orang
                     </div>
-                    <div class="col-md-6">
-                        <strong>Target Anggota:</strong> {{ $organisasi->jumlah_anggota }} orang
-                    </div>
                 </div>
-                @if ($organisasi->anggota->count() < $organisasi->jumlah_anggota)
-                    <div class="alert alert-warning mt-2 mb-0">
-                        <small>
-                            <i class="fas fa-info-circle me-1"></i>
-                            Jumlah anggota belum memenuhi target (kurang
-                            {{ $organisasi->jumlah_anggota - $organisasi->anggota->count() }} orang)
-                        </small>
-                    </div>
-                @endif
             </div>
         </div>
 
@@ -224,12 +200,6 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Keputusan Berdasarkan</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="1" checked disabled>
-                            <label class="form-check-label">
-                                Jumlah anggota ({{ $organisasi->anggota->count() }}/{{ $organisasi->jumlah_anggota }})
-                            </label>
-                        </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" value="1"
                                 {{ $ketua ? 'checked' : '' }} disabled>

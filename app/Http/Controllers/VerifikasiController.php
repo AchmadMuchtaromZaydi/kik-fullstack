@@ -41,7 +41,7 @@ class VerifikasiController extends Controller
                     'id','nama','nomor_induk','jenis_kesenian','nama_jenis_kesenian',
                     'sub_kesenian','nama_sub_kesenian','nama_ketua','no_telp_ketua',
                     'alamat','desa','kecamatan','nama_kecamatan','jumlah_anggota',
-                    'status','tanggal_daftar','tanggal_expired'
+                    'status','tanggal_berdiri','tanggal_daftar','tanggal_expired'
                 ])
                 ->with([
                     'jenisKesenianObj:id,nama',
@@ -49,7 +49,7 @@ class VerifikasiController extends Controller
                     'kecamatanWilayah:kode,nama',
                     'desaWilayah:kode,nama',
                     'ketua:id,organisasi_id,nama,telepon,whatsapp',
-                    'anggota:id,organisasi_id,nama,jabatan,telepon,whatsapp',
+                    'anggota:id,organisasi_id,nik,nama,jabatan,telepon,whatsapp',
                     'inventaris:id,organisasi_id,nama,jumlah,pembelian_th,kondisi,keterangan,validasi',
                     // FIX: removed 'deskripsi' (DB doesn't have that column)
                     'dataPendukung:id,organisasi_id,image,tipe,validasi',
@@ -95,7 +95,7 @@ class VerifikasiController extends Controller
     {
         try {
             $organisasi = Organisasi::select([
-                    'id','nama','nomor_induk','nama_jenis_kesenian','nama_ketua',
+                    'id','nama','nomor_induk','nama','nama_ketua',
                     'alamat','kecamatan','tanggal_expired','tanggal_daftar'
                 ])
                 ->with(['kecamatanWilayah:kode,nama'])

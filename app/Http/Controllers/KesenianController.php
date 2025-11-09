@@ -4,214 +4,183 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Organisasi;
-use App\Models\JenisKesenian;
 use App\Models\Wilayah;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Cache;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\KesenianExport;
-use Throwable;
+use Maatwebsite\Excel\Facades\Excel;
 
 class KesenianController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
+    /**
+     * 📋 Menampilkan data kesenian dengan filter dan pagination
+     */
     public function index(Request $request)
     {
-        // ✅ Query utama dengan eager loading untuk mencegah N+1
         $query = Organisasi::query()
-            ->with(['kecamatanWilayah:id,kode,nama', 'desaWilayah:id,kode,nama']);
+            ->with([
+                'kecamatanWilayah:id,kode,nama',
+                'desaWilayah:id,kode,nama',
+                'ketua:id,organisasi_id,nama,telepon,whatsapp',
+            ])
+            ->withCount(['anggota', 'inventaris', 'dataPendukung']);
 
-        // 🔍 FILTER PENCARIAN
-        if ($q = $request->get('q')) {
-            $query->where(function ($qry) use ($q) {
-                $qry->where('nama', 'like', "%{$q}%")
+        // 🔍 Filter umum
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function ($q1) use ($q) {
+                $q1->where('nama', 'like', "%{$q}%")
                     ->orWhere('nomor_induk', 'like', "%{$q}%")
                     ->orWhere('nama_jenis_kesenian', 'like', "%{$q}%")
-                    ->orWhere('nama_ketua', 'like', "%{$q}%")
                     ->orWhere('alamat', 'like', "%{$q}%")
-                    ->orWhere('no_telp_ketua', 'like', "%{$q}%");
+                    ->orWhereHas('ketua', fn($q2) => $q2->where('nama', 'like', "%{$q}%"))
+                    ->orWhereHas('desaWilayah', fn($q3) => $q3->where('nama', 'like', "%{$q}%"))
+                    ->orWhereHas('kecamatanWilayah', fn($q4) => $q4->where('nama', 'like', "%{$q}%"));
             });
         }
 
-        // 🎭 FILTER BERDASARKAN JENIS KESENIAN
-        if ($jenisKesenian = $request->get('jenis_kesenian')) {
-            $query->where('nama_jenis_kesenian', $jenisKesenian);
+        // 🎭 Filter jenis kesenian
+        if ($request->filled('jenis_kesenian')) {
+            $query->where('nama_jenis_kesenian', $request->jenis_kesenian);
         }
 
-        // 🏙️ FILTER BERDASARKAN KECAMATAN
-        if ($kecamatan = $request->get('kecamatan')) {
-            $query->whereHas('kecamatanWilayah', function ($q) use ($kecamatan) {
-                $q->where('nama', $kecamatan);
+        // 🏙️ Filter kecamatan
+        if ($request->filled('kecamatan')) {
+            $query->whereHas('kecamatanWilayah', function ($q) use ($request) {
+                $q->where('nama', $request->kecamatan);
             });
         }
 
-        // Apakah ada pencarian atau filter aktif?
-        $hasSearch = $request->filled('q') || $request->filled('jenis_kesenian') || $request->filled('kecamatan');
-
-        // 🔢 URUTAN
-        if ($hasSearch) {
-            $query->orderByDesc('id');
-        } else {
-            $query->orderByRaw("
-                CASE
-                    WHEN status = 'Request' THEN 1
-                    WHEN status = 'Denny' THEN 2
-                    WHEN status = 'Allow' THEN 3
-                    WHEN status = 'DataLama' THEN 4
-                    ELSE 5
-                END
-            ")->orderByDesc('id');
+        // ⚙️ Filter status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
-        // 📄 Pagination + Cache
-        $perPage = $hasSearch ? 200 : 1000;
-        $page = $request->get('page', 1);
-        $cacheKey = "kesenian_index_{$page}_" . md5(json_encode($request->all()));
+        // 🩵 Urutan prioritas
+        $query->orderByRaw("
+            CASE
+                WHEN status = 'request' THEN 1
+                ELSE 2
+            END
+        ")->orderByDesc('created_at');
 
-        $dataKesenian = Cache::remember($cacheKey, 300, fn() => $query->paginate($perPage));
-        $pagination = $dataKesenian;
+        // 📄 Pagination
+        $dataKesenian = $query->paginate(100)->withQueryString();
 
-        // 🎭 Dropdown Jenis Kesenian (Cache 1 jam)
-        $jenisKesenianList = Cache::remember('jenis_kesenian_dropdown', 3600, function () {
-            return Organisasi::select('nama_jenis_kesenian')
-                ->whereNotNull('nama_jenis_kesenian')
-                ->where('nama_jenis_kesenian', '!=', '')
-                ->distinct()
-                ->orderBy('nama_jenis_kesenian')
-                ->pluck('nama_jenis_kesenian')
-                ->toArray();
-        });
+        // 🔽 Dropdown filter
+        $jenisKesenianList = Organisasi::select('nama_jenis_kesenian')
+            ->whereNotNull('nama_jenis_kesenian')
+            ->distinct()
+            ->pluck('nama_jenis_kesenian');
 
-        // 🏙️ Dropdown Kecamatan (Cache 1 jam)
-        $kecamatanList = Cache::remember('kecamatan_list_dropdown', 3600, function () {
-            return Wilayah::where('kode', 'LIKE', '%.%.%')
-                ->where('kode', 'NOT LIKE', '%.%.%.%')
-                ->where('kode', '!=', '35.10')
-                ->orderBy('nama')
-                ->pluck('nama')
-                ->toArray();
-        });
+        $kecamatanList = Wilayah::where('kode', 'LIKE', '%.%.%')
+            ->where('kode', 'NOT LIKE', '%.%.%.%')
+            ->orderBy('nama')
+            ->pluck('nama');
 
         return view('admin.kesenian.index', compact(
             'dataKesenian',
             'jenisKesenianList',
-            'kecamatanList',
-            'hasSearch',
-            'pagination'
+            'kecamatanList'
         ));
     }
 
-    // 📄 Detail data kesenian
-    public function show($id)
+    /**
+     * 📥 Download PDF - Group by Kecamatan
+     */
+    public function download(Request $request)
     {
-        $item = Organisasi::with(['kecamatanWilayah', 'desaWilayah'])->find($id);
-
-        if (!$item) {
-            return back()->with('error', 'Data tidak ditemukan.');
-        }
-
-        return view('kesenian.show', compact('item'));
-    }
-
-    // ✏️ Edit data kesenian
-    public function edit($id)
-    {
-        $item = Organisasi::find($id);
-        if (!$item) {
-            return back()->with('error', 'Data tidak ditemukan.');
-        }
-
-        $jenisKesenian = JenisKesenian::orderBy('nama')->pluck('nama')->toArray();
-        $kecamatanList = Wilayah::where('kode', 'LIKE', '%.%.%')
-            ->where('kode', 'NOT LIKE', '%.%.%.%')
-            ->where('kode', '!=', '35.10')
-            ->orderBy('nama')
-            ->pluck('nama')
-            ->toArray();
-
-        return view('kesenian.edit', compact('item', 'jenisKesenian', 'kecamatanList'));
-    }
-
-    // 📥 Download (PDF / Excel)
-    public function download(Request $request, $type)
-    {
-        $jenisKesenian = $request->get('jenis_kesenian');
-        $kecamatan = $request->get('kecamatan');
-        $q = $request->get('q');
+        ini_set('max_execution_time', 300);
+        ini_set('memory_limit', '1024M');
 
         $query = Organisasi::query()
-            ->with(['kecamatanWilayah:id,kode,nama', 'desaWilayah:id,kode,nama']);
+            ->with([
+                'kecamatanWilayah:id,kode,nama',
+                'desaWilayah:id,kode,nama',
+                'ketua:id,organisasi_id,nama,telepon,whatsapp,jabatan',
+                'jenisKesenianObj:id,nama',
+                'subKesenianObj:id,nama',
+                'anggota:id,organisasi_id',
+                'inventaris:id,organisasi_id',
+                'dataPendukung:id,organisasi_id,image,tipe,validasi',
+            ])
+            ->withCount(['anggota', 'inventaris', 'dataPendukung']);
 
-        if ($jenisKesenian) {
-            $query->where('nama_jenis_kesenian', $jenisKesenian);
-        }
-
-        if ($kecamatan) {
-            $query->whereHas('kecamatanWilayah', fn($q2) => $q2->where('nama', $kecamatan));
-        }
-
-        if ($q) {
-            $query->where(function ($qry) use ($q) {
-                $qry->where('nama', 'like', "%{$q}%")
+        // Filter opsional
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function ($sub) use ($q) {
+                $sub->where('nama', 'like', "%{$q}%")
                     ->orWhere('nomor_induk', 'like', "%{$q}%")
                     ->orWhere('nama_jenis_kesenian', 'like', "%{$q}%")
-                    ->orWhere('nama_ketua', 'like', "%{$q}%")
-                    ->orWhere('alamat', 'like', "%{$q}%");
+                    ->orWhereHas('ketua', fn($q2) => $q2->where('nama', 'like', "%{$q}%"))
+                    ->orWhereHas('desaWilayah', fn($q3) => $q3->where('nama', 'like', "%{$q}%"))
+                    ->orWhereHas('kecamatanWilayah', fn($q4) => $q4->where('nama', 'like', "%{$q}%"));
             });
         }
 
-        $allData = $query->orderBy('id')->limit(5000)->get();
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
 
-        $filename = 'data_kesenian';
-        if ($kecamatan) $filename .= '_' . str_replace(' ', '_', strtolower($kecamatan));
-        if ($jenisKesenian) $filename .= '_' . str_replace(' ', '_', strtolower($jenisKesenian));
-        if (!$kecamatan && !$jenisKesenian && !$q) $filename .= '_semua_kecamatan';
+        // Ambil semua data
+        $dataKesenian = $query->get();
 
-        return match ($type) {
-            'pdf' => $this->generatePDF($allData, $filename),
-            'excel' => $this->generateExcel($allData, $filename),
-            default => back()->with('error', 'Format download tidak valid.')
-        };
+        // Group by kecamatan
+        $groupedData = $dataKesenian->groupBy(function ($item) {
+            return optional($item->kecamatanWilayah)->nama ?? $item->nama_kecamatan ?? 'Tanpa Kecamatan';
+        })->sortKeys();
+
+        // Generate PDF
+        $pdf = Pdf::loadView('admin.kesenian.pdf_grouped', [
+            'groupedData' => $groupedData,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('data_kesenian_by_kecamatan.pdf');
     }
 
-    // 🧾 Generate PDF
-    private function generatePDF($data, $filename)
+    /**
+     * 📊 Download Excel - Tetap XLSX, bukan PDF
+     */
+    public function downloadExcel(Request $request)
     {
-        set_time_limit(300);
-        try {
-            if ($data->count() > 1000) {
-                return back()->with('error', 'Terlalu banyak data untuk PDF. Gunakan Excel.');
-            }
+        ini_set('max_execution_time', 300);
+        ini_set('memory_limit', '1024M');
 
-            $dataByKecamatan = $data->groupBy(fn($item) => $item->kecamatanWilayah->nama ?? 'Tidak Terkategori');
+        $query = Organisasi::query()
+            ->with([
+                'kecamatanWilayah:id,kode,nama',
+                'desaWilayah:id,kode,nama',
+                'ketua:id,organisasi_id,nama,telepon,whatsapp',
+            ])
+            ->withCount(['anggota', 'inventaris', 'dataPendukung']);
 
-            $pdf = Pdf::loadView('kesenian.export-pdf', [
-                'dataByKecamatan' => $dataByKecamatan,
-                'tanggalExport' => now()->format('d/m/Y H:i:s')
-            ]);
-
-            return $pdf->download($filename . '.pdf');
-        } catch (Throwable $e) {
-            Log::error('PDF Download Error: ' . $e->getMessage());
-            return back()->with('error', 'Gagal membuat PDF: ' . $e->getMessage());
+        // Filter opsional
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function ($sub) use ($q) {
+                $sub->where('nama', 'like', "%{$q}%")
+                    ->orWhere('nomor_induk', 'like', "%{$q}%")
+                    ->orWhere('nama_jenis_kesenian', 'like', "%{$q}%")
+                    ->orWhereHas('kecamatanWilayah', fn($q4) => $q4->where('nama', 'like', "%{$q}%"))
+                    ->orWhereHas('desaWilayah', fn($q5) => $q5->where('nama', 'like', "%{$q}%"))
+                    ->orWhereHas('ketua', fn($q6) => $q6->where('nama', 'like', "%{$q}%"));
+            });
         }
-    }
 
-    // 📊 Generate Excel
-    private function generateExcel($data, $filename)
-    {
-        try {
-            return Excel::download(new KesenianExport($data), $filename . '.xlsx');
-        } catch (Throwable $e) {
-            Log::error('Excel Download Error: ' . $e->getMessage());
-            return back()->with('error', 'Gagal membuat file Excel: ' . $e->getMessage());
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
+
+        if ($request->filled('kecamatan')) {
+            $query->whereHas('kecamatanWilayah', function ($q) use ($request) {
+                $q->where('nama', $request->kecamatan);
+            });
+        }
+
+        // Ambil data lengkap
+        $data = $query->get();
+
+        $fileName = 'Data_Kesenian_' . now()->format('Ymd_His') . '.xlsx';
+        return Excel::download(new KesenianExport($data), $fileName);
     }
 }

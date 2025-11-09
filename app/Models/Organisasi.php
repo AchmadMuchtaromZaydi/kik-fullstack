@@ -47,10 +47,11 @@ class Organisasi extends Model
     }
 
     // === ACCESSORS ===
-    public function getJenisKesenianNamaAttribute()
-    {
-        return $this->jenisKesenianObj->nama ?? $this->nama_jenis_kesenian ?? 'Tidak diketahui';
-    }
+   public function getJenisKesenianNamaAttribute()
+{
+    return $this->jenisKesenianObj->nama ?? $this->nama_jenis_kesenian ?? 'Tidak diketahui';
+}
+
 
     public function getSubKesenianNamaAttribute()
     {

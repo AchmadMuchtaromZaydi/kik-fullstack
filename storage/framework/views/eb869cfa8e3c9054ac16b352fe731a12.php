@@ -17,7 +17,6 @@
                         <th>Tahun Pembelian</th>
                         <th>Kondisi</th>
                         <th>Keterangan</th>
-                        <th>Status Validasi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -35,12 +34,6 @@
                                 </span>
                             </td>
                             <td><?php echo e($item->keterangan ?? '-'); ?></td>
-                            <td>
-                                <span class="badge bg-<?php echo e($item->validasi ? 'success' : 'warning'); ?>">
-                                    <?php echo e($item->validasi ? 'Terverifikasi' : 'Belum Diverifikasi'); ?>
-
-                                </span>
-                            </td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
