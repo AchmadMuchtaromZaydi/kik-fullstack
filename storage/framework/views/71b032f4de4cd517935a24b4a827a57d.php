@@ -193,8 +193,7 @@
                                         <?php else: ?>
                                             <div class="text-center text-danger border rounded p-2">
                                                 <i class="fas fa-exclamation-circle"></i>
-                                                <small>File tidak ada</small>
-                                                <br>
+                                                <small>File tidak ada</small><br>
                                                 <small
                                                     class="text-muted"><?php echo e($fotoData['foto']->image ?? 'No file'); ?></small>
                                             </div>
@@ -352,10 +351,10 @@
                 });
         }
 
-        // Panggil saat halaman load
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Debug Info:', <?php echo json_encode($debugInfo, 15, 512) ?>);
-        });
+        // Jika ingin aktifkan log debug lagi nanti:
+        // document.addEventListener('DOMContentLoaded', () => {
+        //     console.log('Debug Info aktif kembali di sini jika dibutuhkan');
+        // });
     </script>
 </div>
 <?php /**PATH C:\project-magang\fullstack-KIK\kik-fullstack\resources\views/admin/verifikasi/tabs/data_pendukung.blade.php ENDPATH**/ ?>

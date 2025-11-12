@@ -189,8 +189,7 @@
                                         @else
                                             <div class="text-center text-danger border rounded p-2">
                                                 <i class="fas fa-exclamation-circle"></i>
-                                                <small>File tidak ada</small>
-                                                <br>
+                                                <small>File tidak ada</small><br>
                                                 <small
                                                     class="text-muted">{{ $fotoData['foto']->image ?? 'No file' }}</small>
                                             </div>
@@ -348,9 +347,9 @@
                 });
         }
 
-        // Panggil saat halaman load
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Debug Info:', @json($debugInfo));
-        });
+        // Jika ingin aktifkan log debug lagi nanti:
+        // document.addEventListener('DOMContentLoaded', () => {
+        //     console.log('Debug Info aktif kembali di sini jika dibutuhkan');
+        // });
     </script>
 </div>
