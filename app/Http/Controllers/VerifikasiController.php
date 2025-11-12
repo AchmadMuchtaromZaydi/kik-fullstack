@@ -28,8 +28,8 @@ class VerifikasiController extends Controller
     }
 
     /* =========================================================
-       =============== HALAMAN DETAIL VERIFIKASI ===============
-       ========================================================= */
+     =============== HALAMAN DETAIL VERIFIKASI ===============
+     ========================================================= */
     public function show($id, Request $request)
     {
         set_time_limit(120);
@@ -88,8 +88,8 @@ class VerifikasiController extends Controller
     }
 
     /* =========================================================
-       ================== SIMPAN VERIFIKASI ====================
-       ========================================================= */
+     ================== SIMPAN VERIFIKASI ====================
+     ========================================================= */
     public function storeVerifikasi(Request $request, $id)
     {
         $request->validate([
@@ -119,8 +119,8 @@ class VerifikasiController extends Controller
     }
 
     /* =========================================================
-       ==================== APPROVE ORGANISASI =================
-       ========================================================= */
+     ==================== APPROVE ORGANISASI =================
+     ========================================================= */
     public function approve($id)
     {
         $organisasi = Organisasi::findOrFail($id);
@@ -130,16 +130,24 @@ class VerifikasiController extends Controller
                 ->with('error','Tidak dapat menyetujui karena ada data yang belum divalidasi atau tidak valid.');
         }
 
+        // 1. FORMAT NOMOR INDUK (Sesuai backend API)
         if (empty($organisasi->nomor_induk)) {
-            $organisasi->nomor_induk = $this->generateUniqueNomorInduk($organisasi);
+            $carbonInstance = Carbon::now();
+            $year = $carbonInstance->year;
+            // Menggunakan format dari Api/ValidasiController.php
+            $organisasi->nomor_induk = "430/" . $organisasi->id . '.' . $organisasi->jenis_kesenian . '.' . $organisasi->sub_kesenian . "/429.110/"  . $year;
         }
 
         try {
             DB::transaction(function() use ($organisasi, $id) {
-                $organisasi->update([
-                    'status' => 'Allow',
-                    'tanggal_expired' => now()->addYear()
-                ]);
+
+                $organisasi->status = 'Allow';
+
+                // 2. FORMAT TANGGAL EXPIRED (Sesuai backend API)
+                // Diubah dari addYear() menjadi addYears(2)
+                $organisasi->tanggal_expired = now()->addYears(2);
+
+                $organisasi->save(); // Menyimpan perubahan nomor induk, status, dan expired
 
                 Verifikasi::where('organisasi_id',$id)
                     ->where('status','valid')
@@ -165,8 +173,8 @@ class VerifikasiController extends Controller
     }
 
     /* =========================================================
-       ===================== REJECT ORGANISASI =================
-       ========================================================= */
+     ===================== REJECT ORGANISASI =================
+     ========================================================= */
     public function reject($id)
     {
         Organisasi::where('id',$id)->update(['status'=>'Denny']);
@@ -176,8 +184,8 @@ class VerifikasiController extends Controller
     }
 
     /* =========================================================
-       ================== GENERATE KARTU (PDF) =================
-       ========================================================= */
+     ================== GENERATE KARTU (PDF) =================
+     ========================================================= */
     public function generateCard($id)
     {
         $organisasi = Organisasi::with(['jenisKesenianObj','subKesenianObj','kecamatanWilayah'])
@@ -189,8 +197,8 @@ class VerifikasiController extends Controller
     }
 
     /* =========================================================
-       ============== GENERATE KARTU (FORMAT PNG) ==============
-       ========================================================= */
+     ============== GENERATE KARTU (FORMAT PNG) ==============
+     ========================================================= */
     public function generateImageCard($id)
     {
         try {
@@ -252,8 +260,8 @@ class VerifikasiController extends Controller
     }
 
     /* =========================================================
-       ================== PREVIEW KARTU (PNG) ==================
-       ========================================================= */
+     ================== PREVIEW KARTU (PNG) ==================
+     ========================================================= */
     public function previewKartu($id)
     {
         $org = Organisasi::findOrFail($id);
@@ -300,85 +308,11 @@ class VerifikasiController extends Controller
     }
 
     /* =========================================================
-       ==================== FUNGSI UTILITAS ====================
-       ========================================================= */
-    private function generateNomorInduk($org)
-    {
-        $tahun = now()->year;
-        $kodeKec = $this->getFormattedKodeWilayah($org->kecamatan);
-        $kodeDesa = $this->getFormattedKodeWilayah($org->desa);
-        $seq = $this->getNextSequence($tahun);
-        return "{$seq}/{$kodeKec}/{$kodeDesa}/{$tahun}";
-    }
+     ==================== FUNGSI UTILITAS ====================
+     ========================================================= */
 
-    private function generateUniqueNomorInduk($org, $forceNew=false)
-    {
-        $attempt = 0;
-        do {
-            $nomor = $attempt===0 && !$forceNew
-                ? $this->generateNomorInduk($org)
-                : $this->generateNomorIndukWithCustomSequence($org, $attempt+1);
-            $exists = Organisasi::where('nomor_induk',$nomor)->exists();
-            $attempt++;
-        } while ($exists && $attempt < 30);
-
-        if ($exists) {
-            $time = now()->format('His');
-            $tahun = now()->year;
-            $nomor = "{$time}/{$this->getFormattedKodeWilayah($org->kecamatan)}/{$this->getFormattedKodeWilayah($org->desa)}/{$tahun}";
-        }
-
-        return $nomor;
-    }
-
-    private function generateNomorIndukWithCustomSequence($org, $seq)
-    {
-        $tahun = now()->year;
-        return "{$seq}/{$this->getFormattedKodeWilayah($org->kecamatan)}/{$this->getFormattedKodeWilayah($org->desa)}/{$tahun}";
-    }
-
-    private function getFormattedKodeWilayah($kode)
-    {
-        if (!$kode) return '00.00.00';
-
-        return Cache::remember("formatted_wilayah_{$kode}", 3600, function() use ($kode) {
-            $p = explode('.', $kode);
-            if (count($p) >= 4) {
-                $kab = intval($p[1]??0);
-                $kec = intval($p[2]??0);
-                $des = intval($p[3]??0);
-                return "{$this->mapKabupatenCode($kab)}.{$kec}.{$this->mapDesaCode($des)}";
-            }
-            return '00.00.00';
-        });
-    }
-
-    private function mapKabupatenCode($kode)
-    {
-        return [10 => 18][$kode] ?? $kode;
-    }
-
-    private function mapDesaCode($kode)
-    {
-        return ($kode >= 1000 && $kode <= 1999)
-            ? $kode - 1000 + 31
-            : $kode;
-    }
-
-    private function getNextSequence($tahun)
-    {
-        return Cache::remember("sequence_number_{$tahun}", 300, function() use ($tahun) {
-            $last = Organisasi::where('nomor_induk','like',"%/{$tahun}")
-                ->whereNotNull('nomor_induk')
-                ->orderByDesc('nomor_induk')
-                ->first();
-            if ($last && $last->nomor_induk) {
-                $p = explode('/', $last->nomor_induk);
-                return intval($p[0] ?? 0) + 1;
-            }
-            return 1;
-        });
-    }
+    // Fungsi-fungsi private untuk format 'seq/kec/desa/tahun' telah dihapus
+    // karena kita sekarang menggunakan format '430/...'
 
     private function getNextTab($current)
     {
