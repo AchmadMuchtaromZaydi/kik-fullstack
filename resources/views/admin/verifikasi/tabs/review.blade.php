@@ -152,12 +152,13 @@
                 </div>
             </div>
 
-            {{-- Tombol Generate Kartu --}}
+            {{-- Tombol Tampilkan Kartu (Logika Baru) --}}
             @if ($organisasi->status === 'Allow')
                 <div class="text-center mt-4">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#previewKartuModal">
-                        <i class="fas fa-id-card me-2"></i>Generate Kartu Kesenian
-                    </button>
+                    <a href="{{ route('admin.verifikasi.kartu', $organisasi->id) }}" class="btn btn-primary"
+                        target="_blank">
+                        <i class="fas fa-id-card me-2"></i> Tampilkan Kartu Induk
+                    </a>
                 </div>
             @endif
 

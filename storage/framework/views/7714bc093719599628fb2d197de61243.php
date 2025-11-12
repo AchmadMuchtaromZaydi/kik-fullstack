@@ -155,9 +155,10 @@
             
             <?php if($organisasi->status === 'Allow'): ?>
                 <div class="text-center mt-4">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#previewKartuModal">
-                        <i class="fas fa-id-card me-2"></i>Generate Kartu Kesenian
-                    </button>
+                    <a href="<?php echo e(route('admin.verifikasi.kartu', $organisasi->id)); ?>" class="btn btn-primary"
+                        target="_blank">
+                        <i class="fas fa-id-card me-2"></i> Tampilkan Kartu Induk
+                    </a>
                 </div>
             <?php endif; ?>
 
