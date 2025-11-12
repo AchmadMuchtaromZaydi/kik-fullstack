@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+// 1. TAMBAHKAN 'use Illuminate\Http\Request;'
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
-// Menggunakan Facade V3 Laravel
+use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Laravel\Facades\Image;
 use App\Models\Organisasi;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon; // <-- Diperlukan untuk tanggal
+use Carbon\Carbon;
 
 class KartuController extends Controller
 {
@@ -17,11 +18,18 @@ class KartuController extends Controller
         $this->middleware('auth');
     }
 
-    public function generateKartu($id)
+    // 2. TAMBAHKAN 'Request $request' SEBAGAI PARAMETER
+    public function generateKartu(Request $request, $id)
     {
         try {
-            // 🔹 Ambil data organisasi (termasuk relasi untuk alamat)
-            $org = Organisasi::with(['jenisKesenianObj', 'kecamatanWilayah', 'desaWilayah'])->findOrFail($id);
+            // 🔹 Ambil data organisasi dengan relasi yang diperlukan
+            $org = Organisasi::with([
+                'jenisKesenianObj',
+                'kecamatanWilayah',
+                'desaWilayah',
+                'dataPendukung',
+                'ketua' // Relasi ini sudah Anda panggil, bagus!
+            ])->findOrFail($id);
 
             // 🔹 Path folder organisasi
             $orgPath = public_path("storage/uploads/organisasi/{$org->id}");
@@ -29,63 +37,89 @@ class KartuController extends Controller
                 File::makeDirectory($orgPath, 0777, true);
             }
 
-            // --- PERUBAHAN 1: GANTI TEMPLATE ---
-            // Kita gunakan 'contoh-1.jpeg' agar layoutnya sesuai
             $templatePath = public_path('images/template-2.jpeg');
             $qrcodePath = public_path('images/qrcode.png');
 
             if (!File::exists($templatePath)) {
                 Log::error("Template kartu tidak ditemukan di: " . $templatePath);
-                return back()->with('error', 'Template kartu (contoh-1.jpeg) tidak ditemukan.');
+                return back()->with('error', 'Template kartu tidak ditemukan.');
             }
 
-            // --- SINTAKS V3 ---
             $image = Image::read($templatePath);
 
-            // 🔹 Tambahkan QR code (sesuai layout contoh-1)
+            // 🔹 Tambahkan QR code
             if (File::exists($qrcodePath)) {
-                // Koordinat & ukuran dari VerifikasiController
                 $qr = Image::read($qrcodePath)->resize(150, 150);
                 $image->place($qr, 'bottom-center', 30, 150);
             }
 
-            // --- PERUBAHAN 2: GANTI KOORDINAT & DATA ---
-            // (Menggunakan koordinat & data dari VerifikasiController agar sesuai contoh-1.jpeg)
-
-            $image->text($org->nama_ketua ?? '-', 450, 400, function ($font) {
+            // =================================================================
+            // ✅ PERBAIKAN DI SINI:
+            // =================================================================
+            $image->text($org->nama_ketua, 440, 290, function ($font) {
                 $font->file(public_path('fonts/OpenSans-Bold.ttf'));
-                $font->size(42);
-                $font->color('#0B2E83');
+                $font->size(60);
+                $font->color('#0040FFFF');
+                $font->align('left');
             });
 
-            $image->text($org->nama ?? '-', 450, 410, function ($font) {
+            $namaOrganisasi = "Ketua\n" . ($org->nama ?? '-'); // Gabungkan string di sini
+
+            $image->text($namaOrganisasi, 440, 375, function ($font) {
                 $font->file(public_path('fonts/OpenSans-Regular.ttf'));
-                $font->size(28);
+                $font->size(35);
                 $font->color('#C70000');
             });
-
-            // Data Nomor Induk ditambahkan
-            $image->text($org->nomor_induk ?? '-', 450, 440, function ($font) {
+            $image->text($org->nomor_induk ?? '-', 440, 530, function ($font) {
                 $font->file(public_path('fonts/OpenSans-Regular.ttf'));
-                $font->size(30);
+                $font->size(50);
                 $font->color('#222');
             });
 
-            // --- PERBAIKAN PARSE ERROR ---
-            // 1. Siapkan variabel alamat terlebih dahulu
+            // 🔹 TAMBAHKAN: Foto ketua (pas foto)
+            $fotoKetua = $org->dataPendukung->where('tipe', 'photo')->first();
+
+            if ($fotoKetua) {
+                $fotoPath = $org->getFilePath($fotoKetua);
+
+                if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
+                    $fullFotoPath = storage_path("app/public/{$fotoPath}");
+
+                    if (File::exists($fullFotoPath)) {
+                        try {
+                            $foto = Image::read($fullFotoPath);
+                            $foto->resize(150, 180); // Ukuran pas foto
+                            $image->place($foto, 'top-left', 100, 150);
+                            Log::info("Foto ketua berhasil ditambahkan");
+                        } catch (\Exception $e) {
+                            Log::error("Gagal memproses foto ketua: " . $e->getMessage());
+                        }
+                    }
+                }
+            }
+
+            // 🔹 Alamat (DENGAN WORD WRAP)
             $namaDesa = $org->desaWilayah->nama ?? '';
             $namaKecamatan = $org->kecamatanWilayah->nama ?? '';
             $alamat = "{$org->alamat}, {$namaDesa}, {$namaKecamatan}, Banyuwangi";
 
-            // 2. Gunakan variabel $alamat yang sudah bersih
-            $image->text($alamat, 120, 600, function ($font) {
-                $font->file(public_path('fonts/OpenSans-Regular.ttf'));
-                $font->size(26);
-                $font->color('#002C72');
-            });
-            // --- SELESAI PERBAIKAN ---
+            $characterLimit = 45;
+            $wrappedAlamat = wordwrap($alamat, $characterLimit, "\n", true);
+            $lines = explode("\n", $wrappedAlamat);
 
-            // Data Tanggal Expired ditambahkan
+            $startY = 620;
+            $lineHeight = 36;
+
+            foreach ($lines as $index => $line) {
+                $yPos = $startY + ($index * $lineHeight);
+                $image->text(trim($line), 120, $yPos, function ($font) {
+                    $font->file(public_path('fonts/OpenSans-Regular.ttf'));
+                    $font->size(26);
+                    $font->color('#002C72');
+                });
+            }
+
+            // 🔹 Masa aktif
             $masa = "Aktif Sampai " . ($org->tanggal_expired ? Carbon::parse($org->tanggal_expired)->format('d.m.Y') : '-');
             $image->text($masa, 700, 720, function ($font) {
                 $font->file(public_path('fonts/OpenSans-Regular.ttf'));
@@ -93,15 +127,22 @@ class KartuController extends Controller
                 $font->color('#000');
             });
 
-            // --- PERUBAHAN 3: HAPUS PAS FOTO ---
-            // $fotoPath = ... (dihapus)
-            // if (File::exists($fotoPath)) { ... } (dihapus)
-
-            // 🔹 Simpan hasil di folder organisasi
+            // 🔹 Simpan hasil
             $outputPath = "{$orgPath}/kartu_induk_generated.png";
             $image->save($outputPath, 90);
 
-            // 🔹 Kembalikan file langsung ke browser (Sesuai permintaan Anda)
+            // =================================================================
+            // ✅ PERUBAHAN LOGIKA OUTPUT
+            // =================================================================
+
+            // 3. Cek query parameter 'download'
+            if ($request->query('download') == 'true') {
+                // Jika ?download=true, paksa browser untuk mengunduh file
+                $filename = 'kartu_induk_' . ($org->nomor_induk ?? $org->id) . '.png';
+                return response()->download($outputPath, $filename);
+            }
+
+            // 4. Perilaku default: kembalikan file untuk ditampilkan di browser
             return response()->file($outputPath);
 
         } catch (\Exception $e) {
