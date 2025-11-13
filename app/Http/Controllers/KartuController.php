@@ -63,7 +63,7 @@ class KartuController extends Controller
                 $font->align('left');
             });
 
-            $namaOrganisasi = "Ketua\n\n" . ($org->nama ?? '-'); // Gabungkan string di sini
+            $namaOrganisasi = "Ketua" . ($org->nama ?? '-'); // Gabungkan string di sini
 
             $image->text($namaOrganisasi, 440, 405, function ($font) {
                 $font->file(public_path('fonts/OpenSans-SemiBold.ttf'));
@@ -76,26 +76,45 @@ class KartuController extends Controller
                 $font->color('#222');
             });
 
-            // 🔹 TAMBAHKAN: Foto ketua (pas foto)
+        // 🔹 TAMBAHKAN: Foto ketua (pas foto)
             $fotoKetua = $org->dataPendukung->where('tipe', 'photo')->first();
 
             if ($fotoKetua) {
-                $fotoPath = $org->getFilePath($fotoKetua);
 
-                if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
-                    $fullFotoPath = storage_path("app/public/{$fotoPath}");
+                // --- PERBAIKAN DIMULAI DI SINI ---
 
-                    if (File::exists($fullFotoPath)) {
-                        try {
-                            $foto = Image::read($fullFotoPath);
-                            $foto->resize(150, 180); // Ukuran pas foto
-                            $image->place($foto, 'top-left', 100, 150);
-                            Log::info("Foto ketua berhasil ditambahkan");
-                        } catch (\Exception $e) {
-                            Log::error("Gagal memproses foto ketua: " . $e->getMessage());
-                        }
+                // 1. Asumsikan kolom di database Anda adalah 'nama_file'.
+                //    Jika berbeda (mis: 'path', 'filename'), GANTI 'nama_file' DI BAWAH INI.
+                $namaFileFoto = $fotoKetua->nama_file;
+
+                // 2. Buat path relatif yang benar sesuai struktur folder Anda
+                $fotoPathRelatif = "uploads/organisasi/{$org->id}/{$namaFileFoto}";
+
+                // 3. Cek apakah file ada di disk 'public' menggunakan path relatif
+                if ($namaFileFoto && Storage::disk('public')->exists($fotoPathRelatif)) {
+
+                    // 4. Dapatkan path absolut (full path) ke file menggunakan Storage
+                    $fullFotoPath = Storage::disk('public')->path($fotoPathRelatif);
+                    // $fullFotoPath sekarang akan menjadi /path/lengkap/ke/storage/app/public/uploads/organisasi/9/PAS-FOTO.jpg
+
+                    try {
+                        $foto = Image::read($fullFotoPath);
+                        $foto->resize(150, 180); // Ukuran pas foto
+                        $image->place($foto, 'top-left', 100, 150);
+                        Log::info("Foto ketua berhasil ditambahkan: " . $fullFotoPath);
+
+                    } catch (\Exception $e) {
+                        Log::error("Gagal memproses foto ketua: " . $e->getMessage());
                     }
+
+                } else {
+                    // Tambahkan log ini untuk membantu debugging jika file tidak ditemukan
+                    Log::warning("Storage::disk('public')->exists GAGAL untuk path: " . $fotoPathRelatif);
                 }
+                // --- AKHIR PERBAIKAN ---
+
+            } else {
+                Log::warning("Data pendukung 'photo' tidak ditemukan untuk org ID: {$org->id}");
             }
 
             // 🔹 Alamat (DENGAN WORD WRAP)

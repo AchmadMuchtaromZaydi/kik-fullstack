@@ -25,6 +25,7 @@ class Organisasi extends Model
         'tanggal_expired' => 'date',
     ];
 
+    // Note: appends tetap seperti semula (tidak wajib memasukkan dokumen_* di sini)
     protected $appends = [
         'jenis_kesenian_nama',
         'sub_kesenian_nama',
@@ -35,7 +36,10 @@ class Organisasi extends Model
         'no_telp_ketua'
     ];
 
-    // === BOOT ===
+    /* -----------------------------------------------------------------
+     |  BOOT
+     | -----------------------------------------------------------------
+     */
     protected static function boot()
     {
         parent::boot();
@@ -46,12 +50,14 @@ class Organisasi extends Model
         });
     }
 
-    // === ACCESSORS ===
-   public function getJenisKesenianNamaAttribute()
-{
-    return $this->jenisKesenianObj->nama ?? $this->nama_jenis_kesenian ?? 'Tidak diketahui';
-}
-
+    /* -----------------------------------------------------------------
+     |  ACCESSORS UMUM
+     | -----------------------------------------------------------------
+     */
+    public function getJenisKesenianNamaAttribute()
+    {
+        return $this->jenisKesenianObj->nama ?? $this->nama_jenis_kesenian ?? 'Tidak diketahui';
+    }
 
     public function getSubKesenianNamaAttribute()
     {
@@ -80,7 +86,10 @@ class Organisasi extends Model
         return '<span class="badge bg-' . $color . '">' . e($text) . '</span>';
     }
 
-    // === WILAYAH ===
+    /* -----------------------------------------------------------------
+     |  WILAYAH
+     | -----------------------------------------------------------------
+     */
     public function getNamaKecamatanAttribute()
     {
         if ($this->relationLoaded('kecamatanWilayah') && $this->kecamatanWilayah) {
@@ -99,7 +108,10 @@ class Organisasi extends Model
         return $this->attributes['nama_desa'] ?? '-';
     }
 
-    // === KETUA ===
+    /* -----------------------------------------------------------------
+     |  KETUA
+     | -----------------------------------------------------------------
+     */
     public function getNamaKetuaAttribute()
     {
         if ($this->relationLoaded('ketua') && $this->ketua) {
@@ -118,86 +130,162 @@ class Organisasi extends Model
         return $this->attributes['no_telp_ketua'] ?? '-';
     }
 
-    // === FILE HANDLING ===
+    /* -----------------------------------------------------------------
+     |  FILE HANDLING
+     | -----------------------------------------------------------------
+     */
+
+    /**
+     * Dapatkan path file yang valid dari storage (relative untuk disk public)
+     * atau fallback ke public/storage
+     *
+     * Mengembalikan:
+     *  - 'uploads/organisasi/{id}/{filename}'  (jika ada di storage/app/public)
+     *  - 'storage/uploads/organisasi/{id}/{filename}' (jika file ada di public/storage)
+     *  - null jika tidak ditemukan
+     */
     public function getFilePath($dataPendukung)
     {
-        if (!$dataPendukung || !$dataPendukung->image) return null;
+        if (!$dataPendukung || empty($dataPendukung->image)) {
+            return null;
+        }
 
-        $possiblePaths = [
-            "uploads/organisasi/{$this->id}/" . basename($dataPendukung->image),
-            "uploads/organisasi/{$this->id}/" . $dataPendukung->image,
-            $dataPendukung->image,
-            "public/uploads/organisasi/{$this->id}/" . basename($dataPendukung->image),
-            "public/" . $dataPendukung->image,
-        ];
+        $filename = basename($dataPendukung->image);
+        $relativePath = "uploads/organisasi/{$this->id}/{$filename}";
 
-        foreach ($possiblePaths as $path) {
-            if (Storage::disk('public')->exists($path)) return $path;
-            if (Storage::exists($path)) return $path;
+        // 1) cek di disk 'public' (storage/app/public)
+        if (Storage::disk('public')->exists($relativePath)) {
+            return $relativePath;
+        }
 
-            if (str_starts_with($path, 'public/')) {
-                $altPath = str_replace('public/', '', $path);
-                if (Storage::disk('public')->exists($altPath)) return $altPath;
-                if (Storage::exists($altPath)) return $altPath;
-            }
+        // 2) fallback: cek di public/storage (symlink)
+        if (file_exists(public_path("storage/{$relativePath}"))) {
+            return "storage/{$relativePath}";
         }
 
         return null;
     }
 
-    public function getFileUrl($dataPendukung)
-    {
-        $filePath = $this->getFilePath($dataPendukung);
-        if (!$filePath) return null;
+    /**
+     * Dapatkan URL publik dari file yang ditemukan.
+     */
+   public function getFileUrl($dataPendukung)
+{
+    $path = $this->getFilePath($dataPendukung);
 
-        if (Storage::disk('public')->exists($filePath)) {
-            return Storage::disk('public')->url($filePath);
-        }
-        if (Storage::exists($filePath)) {
-            return Storage::url($filePath);
-        }
+    if (!$path) {
         return null;
     }
 
+    // Normalisasi base URL agar sesuai dengan yang sedang digunakan (localhost atau 127)
+    $baseUrl = request()->getSchemeAndHttpHost();
+    // contoh: http://127.0.0.1:8000 atau http://localhost:8000
+
+    // Jika path sudah mengandung 'storage/', artinya file ada di public/storage
+    if (str_starts_with($path, 'storage/')) {
+        return "{$baseUrl}/" . ltrim($path, '/');
+    }
+
+    // Jika path berasal dari disk 'public'
+    $url = Storage::disk('public')->url($path);
+
+    // Pastikan base URL diganti sesuai environment saat ini (127 atau localhost)
+    return str_replace(['http://localhost', 'https://localhost'], $baseUrl, $url);
+}
+
+
+    /**
+     * Mengecek keberadaan file.
+     */
     public function getFileExists($dataPendukung)
     {
-        $filePath = $this->getFilePath($dataPendukung);
-        if (!$filePath) return false;
-        return Storage::disk('public')->exists($filePath) || Storage::exists($filePath);
+        return $this->getFilePath($dataPendukung) !== null;
     }
 
-    // === DATA PENDUKUNG ===
+    /* -----------------------------------------------------------------
+     |  ACCESSOR UNTUK BLADE (URL & EXISTS)
+     |  (dipakai oleh view tanpa mengubah view)
+     | -----------------------------------------------------------------
+     */
+
+    // --- KTP ---
+    public function getDokumenKtpUrlAttribute()
+    {
+        return $this->getFileUrl($this->dokumen_ktp);
+    }
+
+    public function getDokumenKtpFileExistsAttribute()
+    {
+        return $this->getFileExists($this->dokumen_ktp);
+    }
+
+    // --- PAS FOTO ---
+    public function getDokumenPasFotoUrlAttribute()
+    {
+        return $this->getFileUrl($this->dokumen_pas_foto);
+    }
+
+    public function getDokumenPasFotoFileExistsAttribute()
+    {
+        return $this->getFileExists($this->dokumen_pas_foto);
+    }
+
+    // --- BANNER ---
+    public function getDokumenBannerUrlAttribute()
+    {
+        return $this->getFileUrl($this->dokumen_banner);
+    }
+
+    public function getDokumenBannerFileExistsAttribute()
+    {
+        return $this->getFileExists($this->dokumen_banner);
+    }
+
+    /* -----------------------------------------------------------------
+     |  DATA PENDUKUNG ACCESSORS (case-insensitive + tolerant terhadap format)
+     | -----------------------------------------------------------------
+     */
+
+    protected function normalizeTipe(?string $tipe): string
+    {
+        // safe normalize: lower + remove spaces, dashes, underscores
+        return strtolower(str_replace([' ', '-', '_'], '', (string) $tipe));
+    }
+
     public function getDokumenKtpAttribute()
     {
         return $this->relationLoaded('dataPendukung')
-            ? $this->dataPendukung->where('tipe', 'ktp')->first()
+            ? $this->dataPendukung->firstWhere(fn($item) => str_contains($this->normalizeTipe($item->tipe), 'ktp'))
             : null;
     }
 
     public function getDokumenPasFotoAttribute()
     {
         return $this->relationLoaded('dataPendukung')
-            ? $this->dataPendukung->where('tipe', 'photo')->first()
+            ? $this->dataPendukung->firstWhere(fn($item) => $this->normalizeTipe($item->tipe) === 'pasfoto' || str_contains($this->normalizeTipe($item->tipe), 'pasfoto'))
             : null;
     }
 
     public function getDokumenBannerAttribute()
     {
         return $this->relationLoaded('dataPendukung')
-            ? $this->dataPendukung->where('tipe', 'banner')->first()
+            ? $this->dataPendukung->firstWhere(fn($item) => str_contains($this->normalizeTipe($item->tipe), 'banner'))
             : null;
     }
 
     public function getDokumenKegiatanAttribute()
     {
         return $this->relationLoaded('dataPendukung')
-            ? $this->dataPendukung->where('tipe', 'kegiatan')
+            ? $this->dataPendukung->filter(fn($item) => str_contains($this->normalizeTipe($item->tipe), 'kegiatan') || str_contains($this->normalizeTipe($item->tipe), 'fotokegiatan') || str_contains($this->normalizeTipe($item->tipe), 'foto'))
             : collect();
     }
 
+    /**
+     * Kembalikan koleksi foto kegiatan lengkap dengan url & exists
+     */
     public function getFotoKegiatanWithStatus()
     {
-        return $this->dokumen_kegiatan->map(function ($foto, $index) {
+        return $this->getDokumenKegiatanAttribute()->map(function ($foto, $index) {
             return [
                 'foto' => $foto,
                 'url' => $this->getFileUrl($foto),
@@ -207,7 +295,10 @@ class Organisasi extends Model
         })->values();
     }
 
-    // === RELATIONS ===
+    /* -----------------------------------------------------------------
+     |  RELASI
+     | -----------------------------------------------------------------
+     */
     public function kabupatenWilayah()
     {
         return $this->belongsTo(Wilayah::class, 'kabupaten_kode', 'kode');
@@ -248,7 +339,6 @@ class Organisasi extends Model
         return $this->hasMany(Inventaris::class, 'organisasi_id');
     }
 
-    // ✅ FIXED: tidak lagi memanggil kolom 'deskripsi' yang tidak ada
     public function dataPendukung()
     {
         return $this->hasMany(DataPendukung::class, 'organisasi_id')
@@ -262,6 +352,7 @@ class Organisasi extends Model
 
     public function ketua()
     {
-        return $this->hasOne(Anggota::class, 'organisasi_id')->where('jabatan', 'Ketua');
+        return $this->hasOne(Anggota::class, 'organisasi_id')
+            ->where('jabatan', 'Ketua');
     }
 }
