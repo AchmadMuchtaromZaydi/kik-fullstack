@@ -59,14 +59,14 @@ class KartuController extends Controller
             $image->text($org->nama_ketua, 440, 290, function ($font) {
                 $font->file(public_path('fonts/OpenSans-Bold.ttf'));
                 $font->size(60);
-                $font->color('#0040FFFF');
+                $font->color('#006296FF');
                 $font->align('left');
             });
 
-            $namaOrganisasi = "Ketua\n" . ($org->nama ?? '-'); // Gabungkan string di sini
+            $namaOrganisasi = "Ketua\n\n" . ($org->nama ?? '-'); // Gabungkan string di sini
 
-            $image->text($namaOrganisasi, 440, 375, function ($font) {
-                $font->file(public_path('fonts/OpenSans-Regular.ttf'));
+            $image->text($namaOrganisasi, 440, 405, function ($font) {
+                $font->file(public_path('fonts/OpenSans-SemiBold.ttf'));
                 $font->size(35);
                 $font->color('#C70000');
             });
