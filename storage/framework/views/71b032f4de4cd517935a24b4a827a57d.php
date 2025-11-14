@@ -6,8 +6,7 @@
     </div>
     <div class="card-body">
         <div class="row">
-
-            
+            <!-- Foto KTP -->
             <div class="col-md-6 mb-4">
                 <div class="card">
                     <div class="card-header bg-secondary text-white">
@@ -15,8 +14,8 @@
                     </div>
                     <div class="card-body text-center">
                         <?php if($organisasi->dokumen_ktp_url): ?>
-                            <img src="<?php echo e($organisasi->dokumen_ktp_url); ?>" alt="Foto KTP"
-                                class="img-fluid rounded shadow-sm" style="max-height:200px; cursor:pointer;"
+                            <img src="<?php echo e($organisasi->dokumen_ktp_url); ?>" alt="Foto KTP" class="img-fluid rounded"
+                                style="max-height:200px; cursor:pointer;"
                                 onclick="openModal('<?php echo e($organisasi->dokumen_ktp_url); ?>','Foto KTP Ketua')">
                             <div class="mt-2">
                                 <span class="badge bg-success"><i class="fas fa-check"></i> File Ditemukan</span>
@@ -32,7 +31,7 @@
                 </div>
             </div>
 
-            
+            <!-- Pas Foto -->
             <div class="col-md-6 mb-4">
                 <div class="card">
                     <div class="card-header bg-secondary text-white">
@@ -40,8 +39,8 @@
                     </div>
                     <div class="card-body text-center">
                         <?php if($organisasi->dokumen_pas_foto_url): ?>
-                            <img src="<?php echo e($organisasi->dokumen_pas_foto_url); ?>" alt="Pas Foto"
-                                class="img-fluid rounded shadow-sm" style="max-height:200px; cursor:pointer;"
+                            <img src="<?php echo e($organisasi->dokumen_pas_foto_url); ?>" alt="Pas Foto" class="img-fluid rounded"
+                                style="max-height:200px; cursor:pointer;"
                                 onclick="openModal('<?php echo e($organisasi->dokumen_pas_foto_url); ?>','Pas Foto')">
                             <div class="mt-2">
                                 <span class="badge bg-success"><i class="fas fa-check"></i> File Ditemukan</span>
@@ -57,7 +56,7 @@
                 </div>
             </div>
 
-            
+            <!-- Banner -->
             <div class="col-md-6 mb-4">
                 <div class="card">
                     <div class="card-header bg-secondary text-white">
@@ -65,8 +64,8 @@
                     </div>
                     <div class="card-body text-center">
                         <?php if($organisasi->dokumen_banner_url): ?>
-                            <img src="<?php echo e($organisasi->dokumen_banner_url); ?>" alt="Banner"
-                                class="img-fluid rounded shadow-sm" style="max-height:200px; cursor:pointer;"
+                            <img src="<?php echo e($organisasi->dokumen_banner_url); ?>" alt="Banner" class="img-fluid rounded"
+                                style="max-height:200px; cursor:pointer;"
                                 onclick="openModal('<?php echo e($organisasi->dokumen_banner_url); ?>','Banner Organisasi')">
                             <div class="mt-2">
                                 <span class="badge bg-success"><i class="fas fa-check"></i> File Ditemukan</span>
@@ -82,8 +81,8 @@
                 </div>
             </div>
 
-            
-            <div class="col-md-12 mb-4">
+            <!-- Foto Kegiatan -->
+            <div class="col-md-6 mb-4">
                 <div class="card">
                     <div class="card-header bg-secondary text-white">
                         <h6 class="card-title mb-0">Foto Kegiatan</h6>
@@ -96,20 +95,21 @@
                         <?php if($fotoKegiatan->count() > 0): ?>
                             <div class="row">
                                 <?php $__currentLoopData = $fotoKegiatan; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $foto): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <?php $url = $organisasi->getFileUrl($foto); ?>
-                                    <div class="col-md-3 col-sm-4 mb-3 text-center">
+                                    <?php
+                                        $url = $organisasi->getFileUrl($foto);
+                                    ?>
+                                    <div class="col-6 mb-2 text-center">
                                         <?php if($url): ?>
-                                            <img src="<?php echo e($url); ?>" alt="Foto Kegiatan"
-                                                class="img-fluid rounded shadow-sm border"
-                                                style="height:120px; width:100%; object-fit:cover; cursor:pointer;"
-                                                onclick="openModal('<?php echo e($url); ?>', 'Foto Kegiatan')">
+                                            <img src="<?php echo e($url); ?>" alt="Foto Kegiatan" class="img-fluid rounded"
+                                                style="height: 80px; width: 100%; object-fit: cover; cursor:pointer;"
+                                                onclick="openModal('<?php echo e($url); ?>', '<?php echo e($foto->tipe); ?>')">
                                             <div class="text-center mt-1">
                                                 <small class="text-muted"><?php echo e(basename($foto->image)); ?></small>
                                             </div>
                                         <?php else: ?>
-                                            <div class="border rounded p-2 text-danger">
+                                            <div class="text-center text-danger border rounded p-2">
                                                 <i class="fas fa-exclamation-circle"></i>
-                                                <small>File tidak ditemukan</small><br>
+                                                <small>File tidak ada</small><br>
                                                 <small><?php echo e($foto->image); ?></small>
                                             </div>
                                         <?php endif; ?>
@@ -117,9 +117,9 @@
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </div>
                         <?php else: ?>
-                            <div class="text-center text-muted">
+                            <div class="text-muted text-center">
                                 <i class="fas fa-camera fa-2x mb-2"></i>
-                                <p>Belum ada foto kegiatan</p>
+                                <p>Foto kegiatan belum diupload</p>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -130,7 +130,7 @@
 
         <hr>
 
-        
+        <!-- Form Verifikasi -->
         <form action="<?php echo e(route('admin.verifikasi.store', $organisasi->id)); ?>" method="POST">
             <?php echo csrf_field(); ?>
             <input type="hidden" name="tipe" value="data_pendukung">
@@ -182,10 +182,10 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="imageModalLabel">Preview Gambar</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="modalImage" src="" alt="Preview" class="img-fluid rounded">
+                <img id="modalImage" src="" alt="" class="img-fluid">
             </div>
             <div class="modal-footer">
                 <a href="#" id="downloadImage" class="btn btn-primary" download>
@@ -202,8 +202,7 @@
         document.getElementById('modalImage').src = src;
         document.getElementById('imageModalLabel').textContent = title;
         document.getElementById('downloadImage').href = src;
-        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-        modal.show();
+        new bootstrap.Modal(document.getElementById('imageModal')).show();
     }
 </script>
 <?php /**PATH C:\project-magang\fullstack-KIK\kik-fullstack\resources\views/admin/verifikasi/tabs/data_pendukung.blade.php ENDPATH**/ ?>

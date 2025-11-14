@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-// 1. TAMBAHKAN 'use Illuminate\Http\Request;'
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -18,20 +17,17 @@ class KartuController extends Controller
         $this->middleware('auth');
     }
 
-    // 2. TAMBAHKAN 'Request $request' SEBAGAI PARAMETER
     public function generateKartu(Request $request, $id)
     {
         try {
-            // 🔹 Ambil data organisasi dengan relasi yang diperlukan
             $org = Organisasi::with([
                 'jenisKesenianObj',
                 'kecamatanWilayah',
                 'desaWilayah',
                 'dataPendukung',
-                'ketua' // Relasi ini sudah Anda panggil, bagus!
+                'ketua'
             ])->findOrFail($id);
 
-            // 🔹 Path folder organisasi
             $orgPath = public_path("storage/uploads/organisasi/{$org->id}");
             if (!File::exists($orgPath)) {
                 File::makeDirectory($orgPath, 0777, true);
@@ -41,127 +37,111 @@ class KartuController extends Controller
             $qrcodePath = public_path('images/qrcode.png');
 
             if (!File::exists($templatePath)) {
-                Log::error("Template kartu tidak ditemukan di: " . $templatePath);
                 return back()->with('error', 'Template kartu tidak ditemukan.');
             }
 
             $image = Image::read($templatePath);
 
-            // 🔹 Tambahkan QR code
-            if (File::exists($qrcodePath)) {
-                $qr = Image::read($qrcodePath)->resize(150, 150);
-                $image->place($qr, 'bottom-center', 30, 150);
-            }
-
-            // =================================================================
-            // ✅ PERBAIKAN DI SINI:
-            // =================================================================
-            $image->text($org->nama_ketua, 440, 290, function ($font) {
-                $font->file(public_path('fonts/OpenSans-Bold.ttf'));
-                $font->size(60);
-                $font->color('#006296FF');
-                $font->align('left');
-            });
-
-            $namaOrganisasi = "Ketua" . ($org->nama ?? '-'); // Gabungkan string di sini
-
-            $image->text($namaOrganisasi, 440, 405, function ($font) {
-                $font->file(public_path('fonts/OpenSans-SemiBold.ttf'));
-                $font->size(35);
-                $font->color('#C70000');
-            });
-            $image->text($org->nomor_induk ?? '-', 440, 530, function ($font) {
-                $font->file(public_path('fonts/OpenSans-Regular.ttf'));
-                $font->size(50);
-                $font->color('#222');
-            });
-
-        // 🔹 TAMBAHKAN: Foto ketua (pas foto)
-            $fotoKetua = $org->dataPendukung->where('tipe', 'photo')->first();
-
+// ===========================================================
+            // 🧍‍♂️ PAS FOTO — (PERUBAHAN DI SINI SESUAI PERMINTAAN ANDA)
+            // ===========================================================
+            $fotoKetua = $org->dataPendukung->where('tipe', 'PAS-FOTO')->first();
             if ($fotoKetua) {
-
-                // --- PERBAIKAN DIMULAI DI SINI ---
-
-                // 1. Asumsikan kolom di database Anda adalah 'nama_file'.
-                //    Jika berbeda (mis: 'path', 'filename'), GANTI 'nama_file' DI BAWAH INI.
-                $namaFileFoto = $fotoKetua->nama_file;
-
-                // 2. Buat path relatif yang benar sesuai struktur folder Anda
+                $namaFileFoto = $fotoKetua->image;
                 $fotoPathRelatif = "uploads/organisasi/{$org->id}/{$namaFileFoto}";
 
-                // 3. Cek apakah file ada di disk 'public' menggunakan path relatif
-                if ($namaFileFoto && Storage::disk('public')->exists($fotoPathRelatif)) {
-
-                    // 4. Dapatkan path absolut (full path) ke file menggunakan Storage
+                if (Storage::disk('public')->exists($fotoPathRelatif)) {
                     $fullFotoPath = Storage::disk('public')->path($fotoPathRelatif);
-                    // $fullFotoPath sekarang akan menjadi /path/lengkap/ke/storage/app/public/uploads/organisasi/9/PAS-FOTO.jpg
-
                     try {
+                        // --- AWAL BLOK PERBAIKAN (SESUAI KODE ANDA) ---
                         $foto = Image::read($fullFotoPath);
-                        $foto->resize(150, 180); // Ukuran pas foto
-                        $image->place($foto, 'top-left', 100, 150);
-                        Log::info("Foto ketua berhasil ditambahkan: " . $fullFotoPath);
+                        $foto->resize(287, 325); // Ukuran 3x4
+                        // Membulatkan 116.5 -> 117 dan 237.5 -> 238
+                        $image->place($foto, 'top-left', 114, 244); // Posisi kotak foto
+                        // --- AKHIR BLOK PERBAIKAN ---
 
                     } catch (\Exception $e) {
                         Log::error("Gagal memproses foto ketua: " . $e->getMessage());
                     }
-
-                } else {
-                    // Tambahkan log ini untuk membantu debugging jika file tidak ditemukan
-                    Log::warning("Storage::disk('public')->exists GAGAL untuk path: " . $fotoPathRelatif);
                 }
-                // --- AKHIR PERBAIKAN ---
-
-            } else {
-                Log::warning("Data pendukung 'photo' tidak ditemukan untuk org ID: {$org->id}");
             }
 
-            // 🔹 Alamat (DENGAN WORD WRAP)
+            // ===========================================================
+            // 🧾 TEKS INFORMASI (kanan)
+            // ===========================================================
+            $image->text(strtoupper($org->nama_ketua ?? '-'), 440, 300, function ($font) {
+                $font->file(public_path('fonts/OpenSans-Bold.ttf'));
+                $font->size(50);
+                $font->color('#004080');
+                $font->align('left');
+            });
+
+            $image->text("Ketua\n" . ($org->nama ?? '-'), 440, 390, function ($font) {
+                $font->file(public_path('fonts/OpenSans-SemiBold.ttf'));
+                $font->size(36);
+                $font->color('#C70000');
+                $font->align('left');
+            });
+
+            $image->text($org->nomor_induk ?? '-', 440, 510, function ($font) {
+                $font->file(public_path('fonts/OpenSans-Regular.ttf'));
+                $font->size(55);
+                $font->color('#000000');
+            });
+
+            // ===========================================================
+            // 🏠 ALAMAT — versi lama (kanan bawah)
+            // ===========================================================
             $namaDesa = $org->desaWilayah->nama ?? '';
             $namaKecamatan = $org->kecamatanWilayah->nama ?? '';
             $alamat = "{$org->alamat}, {$namaDesa}, {$namaKecamatan}, Banyuwangi";
 
-            $characterLimit = 45;
+            $characterLimit = 30;
             $wrappedAlamat = wordwrap($alamat, $characterLimit, "\n", true);
             $lines = explode("\n", $wrappedAlamat);
 
-            $startY = 620;
-            $lineHeight = 36;
+            $startY = 630;
+            $lineHeight = 38;
 
             foreach ($lines as $index => $line) {
                 $yPos = $startY + ($index * $lineHeight);
                 $image->text(trim($line), 120, $yPos, function ($font) {
                     $font->file(public_path('fonts/OpenSans-Regular.ttf'));
-                    $font->size(26);
+                    $font->size(37);
                     $font->color('#002C72');
+                    $font->align('left');
                 });
             }
 
-            // 🔹 Masa aktif
-            $masa = "Aktif Sampai " . ($org->tanggal_expired ? Carbon::parse($org->tanggal_expired)->format('d.m.Y') : '-');
-            $image->text($masa, 700, 720, function ($font) {
-                $font->file(public_path('fonts/OpenSans-Regular.ttf'));
-                $font->size(22);
+            // ===========================================================
+            // 🕒 MASA AKTIF
+            // ===========================================================
+            $masa = "Aktif sampai " . ($org->tanggal_expired ? Carbon::parse($org->tanggal_expired)->format('d.m.Y') : '-');
+            $image->text($masa, 820, 700, function ($font) {
+                $font->file(public_path('fonts/OpenSans-SemiBold.ttf'));
+                $font->size(30);
                 $font->color('#000');
             });
 
-            // 🔹 Simpan hasil
+            // ===========================================================
+            // 📱 QR CODE di pojok kanan bawah
+            // ===========================================================
+            if (File::exists($qrcodePath)) {
+                $qr = Image::read($qrcodePath)->resize(215, 215);
+                $image->place($qr, 'bottom-center', 190, 100);
+            }
+
+            // ===========================================================
+            // 💾 Simpan hasil
+            // ===========================================================
             $outputPath = "{$orgPath}/kartu_induk_generated.png";
             $image->save($outputPath, 90);
 
-            // =================================================================
-            // ✅ PERUBAHAN LOGIKA OUTPUT
-            // =================================================================
-
-            // 3. Cek query parameter 'download'
             if ($request->query('download') == 'true') {
-                // Jika ?download=true, paksa browser untuk mengunduh file
                 $filename = 'kartu_induk_' . ($org->nomor_induk ?? $org->id) . '.png';
                 return response()->download($outputPath, $filename);
             }
 
-            // 4. Perilaku default: kembalikan file untuk ditampilkan di browser
             return response()->file($outputPath);
 
         } catch (\Exception $e) {
