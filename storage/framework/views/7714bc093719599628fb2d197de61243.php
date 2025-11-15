@@ -27,11 +27,15 @@
         ?>
 
         
+        
+        
         <?php if(!$allValid): ?>
-            <div class="alert alert-warning">
-                <h5><i class="fas fa-exclamation-triangle me-2"></i>Data Belum Lengkap</h5>
-                <p>Berikut status verifikasi setiap bagian:</p>
-                <div class="table-responsive">
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Data Belum Valid</h5>
+                <p>Organisasi ini tidak dapat disetujui karena ada data yang belum divalidasi atau tidak valid. Pastikan
+                    Anda telah menyimpan catatan penolakan di setiap tab yang relevan.</p>
+
+                <div class="table-responsive mt-3">
                     <table class="table table-bordered align-middle">
                         <thead class="table-light">
                             <tr>
@@ -74,16 +78,22 @@
                 </div>
             </div>
 
-            <div class="text-center">
-                <p class="text-muted mb-3">
-                    Tidak dapat menyetujui organisasi karena ada data yang belum valid.
-                </p>
-                <a href="<?php echo e(route('admin.verifikasi.show', ['id' => $organisasi->id, 'tab' => 'data_organisasi'])); ?>"
-                    class="btn btn-warning">
-                    <i class="fas fa-edit me-2"></i>Lanjutkan Verifikasi
-                </a>
+            
+            <div class="text-center mt-4">
+                <form action="<?php echo e(route('admin.verifikasi.reject', $organisasi->id)); ?>" method="POST"
+                    onsubmit="return confirm('Yakin ingin menolak organisasi ini? Status akan diubah menjadi Denny dan Anda akan dikembalikan ke halaman Data Kesenian.')">
+                    <?php echo csrf_field(); ?>
+                    <button type="submit" class="btn btn-danger btn-lg">
+                        <i class="fas fa-times-circle me-2"></i>Simpan & Tolak Organisasi
+                    </button>
+                </form>
+                <small class="text-muted d-block mt-2">Menekan tombol ini akan mengubah status organisasi menjadi
+                    'Denny' dan mengembalikan Anda ke halaman Data Kesenian.</small>
             </div>
+            
 
+            
+            
             
         <?php else: ?>
             <div class="alert alert-success d-flex align-items-center">
@@ -129,34 +139,27 @@
                 </div>
             </div>
 
-            
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <form action="<?php echo e(route('admin.verifikasi.approve', $organisasi->id)); ?>" method="POST">
-                        <?php echo csrf_field(); ?>
-                        <button type="submit" class="btn btn-success btn-lg w-100">
-                            <i class="fas fa-check-circle me-2"></i>Setujui Organisasi
-                        </button>
-                    </form>
-                </div>
-                <div class="col-md-6">
-                    <form action="<?php echo e(route('admin.verifikasi.reject', $organisasi->id)); ?>" method="POST"
-                        onsubmit="return confirm('Yakin ingin menolak organisasi ini?')">
-                        <?php echo csrf_field(); ?>
-                        <button type="submit" class="btn btn-danger btn-lg w-100">
-                            <i class="fas fa-times-circle me-2"></i>Tolak Organisasi
-                        </button>
-                    </form>
-                </div>
-            </div>
-
 
             
-            
+            <?php if($organisasi->status !== 'Allow'): ?>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <form action="<?php echo e(route('admin.verifikasi.approve', $organisasi->id)); ?>" method="POST">
+                            <?php echo csrf_field(); ?>
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-check-circle me-2"></i>Setujui Organisasi
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+
             
             <?php if($organisasi->status === 'Allow'): ?>
                 <div class="text-center mt-4">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                    <p class="text-success mb-3"><i class="fas fa-check-circle"></i> Organisasi ini telah disetujui.</p>
+                    <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal"
                         data-bs-target="#previewKartuModal"
                         data-kartu-url="<?php echo e(route('admin.verifikasi.kartu', $organisasi->id)); ?>">
                         <i class="fas fa-id-card me-2"></i> Tampilkan Kartu Induk
@@ -166,29 +169,22 @@
 
 
             
-            
-            
-            
             <div class="modal fade" id="previewKartuModal" tabindex="-1" aria-labelledby="previewKartuModalLabel"
                 aria-hidden="true">
-
                 <div class="modal-dialog modal-lg modal-dialog-centered">
                     <div class="modal-content" style="border-radius: 14px;">
-
                         <div class="modal-header bg-primary text-white">
                             <h5 class="modal-title" id="previewKartuModalLabel">
                                 <i class="fas fa-id-card me-2"></i>Preview Kartu Induk Kesenian
                             </h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
-
                         <div class="modal-body text-center" style="background:#f5f5f5; padding:20px;">
                             <div id="previewKartuContent">
                                 <div class="spinner-border text-primary" style="width:3rem;height:3rem"></div>
                                 <p class="mt-3 text-muted">Sedang men-generate kartu...</p>
                             </div>
                         </div>
-
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                 <i class="fas fa-times me-2"></i>Tutup
@@ -198,19 +194,17 @@
                                 <i class="fas fa-download me-2"></i>Download Gambar
                             </a>
                         </div>
-
                     </div>
                 </div>
             </div>
 
-
         <?php endif; ?> 
 
         
-        <div class="text-start mt-4">
+        <div class="text-start mt-5">
             <a href="<?php echo e(route('admin.verifikasi.show', ['id' => $organisasi->id, 'tab' => 'data_pendukung'])); ?>"
                 class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Kembali
+                <i class="fas fa-arrow-left me-2"></i>Kembali ke Dok. Pendukung
             </a>
         </div>
     </div>
@@ -218,6 +212,7 @@
 
 
 <?php $__env->startPush('scripts'); ?>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var previewModalEl = document.getElementById('previewKartuModal');
@@ -226,13 +221,9 @@
             var modal = new bootstrap.Modal(previewModalEl);
             var contentArea = document.getElementById('previewKartuContent');
             var downloadButton = document.getElementById('btnDownloadKartu');
-
-            // Simpan spinner awal
             var spinnerHtml = contentArea.innerHTML;
 
-            // Saat modal DIBUKA
             previewModalEl.addEventListener('show.bs.modal', function(event) {
-
                 var button = event.relatedTarget;
                 var kartuUrl = button.getAttribute('data-kartu-url');
 
@@ -240,42 +231,32 @@
                     contentArea.innerHTML = '<p class="text-danger">Gagal mendapatkan URL kartu.</p>';
                     return;
                 }
-
                 var downloadUrl = kartuUrl + '?download=true';
 
                 var img = new Image();
                 img.className = 'img-fluid';
                 img.style.borderRadius = '12px';
                 img.style.boxShadow = '0 5px 15px rgba(0,0,0,0.2)';
-
-                // ⭐ PERBAIKAN UTAMA → Hilangkan crop, biarkan gambar penuh
                 img.style.maxWidth = '100%';
                 img.style.height = 'auto';
-                img.style.maxHeight = 'none';
 
-                // Ketika gambar sukses dimuat
                 img.onload = function() {
                     contentArea.innerHTML = '';
                     contentArea.appendChild(img);
-
                     downloadButton.setAttribute('href', downloadUrl);
                     downloadButton.classList.remove('disabled');
                 };
 
-                // Jika gagal memuat
                 img.onerror = function() {
                     contentArea.innerHTML =
                         '<p class="text-danger">Gagal memuat preview kartu. Silakan coba lagi.</p>';
                 };
 
-                // Tambahkan cache-buster
                 img.src = kartuUrl + '?v=' + new Date().getTime();
             });
 
-            // Saat modal DITUTUP → reset lagi
             previewModalEl.addEventListener('hidden.bs.modal', function() {
                 contentArea.innerHTML = spinnerHtml;
-
                 downloadButton.setAttribute('href', '#');
                 downloadButton.classList.add('disabled');
             });

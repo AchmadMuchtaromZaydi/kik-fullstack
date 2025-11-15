@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Intervention\Image\Laravel\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image; // Pastikan ini ada
 use Carbon\Carbon;
 use App\Models\{
     Organisasi,
@@ -130,11 +130,9 @@ class VerifikasiController extends Controller
                 ->with('error','Tidak dapat menyetujui karena ada data yang belum divalidasi atau tidak valid.');
         }
 
-        // 1. FORMAT NOMOR INDUK (Sesuai backend API)
         if (empty($organisasi->nomor_induk)) {
             $carbonInstance = Carbon::now();
             $year = $carbonInstance->year;
-            // Menggunakan format dari Api/ValidasiController.php
             $organisasi->nomor_induk = "430/" . $organisasi->id . '.' . $organisasi->jenis_kesenian . '.' . $organisasi->sub_kesenian . "/429.110/"  . $year;
         }
 
@@ -142,12 +140,8 @@ class VerifikasiController extends Controller
             DB::transaction(function() use ($organisasi, $id) {
 
                 $organisasi->status = 'Allow';
-
-                // 2. FORMAT TANGGAL EXPIRED (Sesuai backend API)
-                // Diubah dari addYear() menjadi addYears(2)
                 $organisasi->tanggal_expired = now()->addYears(2);
-
-                $organisasi->save(); // Menyimpan perubahan nomor induk, status, dan expired
+                $organisasi->save();
 
                 Verifikasi::where('organisasi_id',$id)
                     ->where('status','valid')
@@ -179,7 +173,10 @@ class VerifikasiController extends Controller
     {
         Organisasi::where('id',$id)->update(['status'=>'Denny']);
         Cache::forget("verifikasi_data_{$id}");
-        return redirect()->route('admin.verifikasi.show',$id)
+
+        // --- PERUBAHAN DI SINI ---
+        // Mengarahkan kembali ke halaman daftar kesenian, bukan halaman verifikasi
+        return redirect()->route('admin.kesenian.index')
             ->with('success','Organisasi berhasil ditolak.');
     }
 
@@ -199,6 +196,11 @@ class VerifikasiController extends Controller
     /* =========================================================
      ============== GENERATE KARTU (FORMAT PNG) ==============
      ========================================================= */
+
+    // FUNGSI generateImageCard dan previewKartu tidak dihapus
+    // untuk menjaga fungsionalitas yang mungkin terhubung di tempat lain
+    // meskipun route 'admin.verifikasi.kartu' sekarang dikelola oleh KartuController.
+
     public function generateImageCard($id)
     {
         try {
@@ -216,7 +218,6 @@ class VerifikasiController extends Controller
             $qrImg = Image::make($qr)->resize(150, 150);
             $img->insert($qrImg, 'bottom-right', 60, 50);
 
-            // Tambah teks ke kartu (posisi disesuaikan dengan contoh)
             $img->text($org->nama_ketua ?? '-', 450, 220, function ($font) {
                 $font->file(public_path('fonts/OpenSans-Bold.ttf'));
                 $font->size(42);
@@ -310,10 +311,6 @@ class VerifikasiController extends Controller
     /* =========================================================
      ==================== FUNGSI UTILITAS ====================
      ========================================================= */
-
-    // Fungsi-fungsi private untuk format 'seq/kec/desa/tahun' telah dihapus
-    // karena kita sekarang menggunakan format '430/...'
-
     private function getNextTab($current)
     {
         return [
