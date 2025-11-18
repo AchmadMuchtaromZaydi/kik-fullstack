@@ -9,41 +9,40 @@ use Illuminate\Support\Facades\Auth;
 
 class DataAnggotaController extends Controller
 {
+    // Tampilkan daftar anggota
     public function index()
     {
         $organisasi = Organisasi::where('user_id', Auth::id())->first();
 
         if (!$organisasi) {
-            return redirect()->route('user.organisasi.index')
+            return redirect()->route('user.organisasi.create')
                 ->with('error', 'Silakan isi data organisasi terlebih dahulu.');
         }
 
         $anggota = $organisasi->anggota()->get();
         $jumlahMaks = $organisasi->jumlah_anggota;
         $jumlahSaatIni = $anggota->count();
+        $sisa = $jumlahMaks - $jumlahSaatIni;
 
-        return view('user.anggota.index', compact('organisasi', 'anggota', 'jumlahMaks', 'jumlahSaatIni'));
+        $ketua = $anggota->where('jabatan', 'Ketua')->first();
+        $sekretaris = $anggota->where('jabatan', 'Sekretaris')->first();
+
+        return view('user.anggota.index', compact(
+            'organisasi', 'anggota', 'jumlahMaks', 'jumlahSaatIni', 'sisa','ketua',
+    'sekretaris'
+        ));
     }
 
-    public function create()
-    {
-        $organisasi = Organisasi::where('user_id', Auth::id())->first();
-        if (!$organisasi) {
-            return redirect()->route('user.organisasi.index')
-                ->with('error', 'Silakan isi data organisasi terlebih dahulu.');
-        }
-
-        // Jika anggota sudah penuh, larang penambahan
-        if ($organisasi->anggota()->count() >= $organisasi->jumlah_anggota) {
-            return redirect()->route('user.anggota.index')
-                ->with('error', 'Jumlah anggota sudah mencapai batas yang ditentukan.');
-        }
-
-        return view('user.anggota.create', compact('organisasi'));
-    }
-
-   public function store(Request $request)
+    // Simpan anggota baru
+    public function store(Request $request)
 {
+    $organisasi = Organisasi::where('user_id', Auth::id())->firstOrFail();
+
+    if ($organisasi->anggota()->count() >= $organisasi->jumlah_anggota) {
+        return back()->with('error', 'Jumlah anggota sudah mencapai batas: ' . $organisasi->jumlah_anggota)
+                     ->with('tab', 'anggota');
+    }
+
     $request->validate([
         'nama' => 'required|string|max:255',
         'nik' => 'required|string|max:20|unique:kik_anggota,nik',
@@ -56,115 +55,59 @@ class DataAnggotaController extends Controller
         'whatsapp' => 'nullable|string|max:20',
     ]);
 
-    $organisasi = Organisasi::where('user_id', Auth::id())->first();
-    if (!$organisasi) {
-        return back()->with('error', 'Organisasi tidak ditemukan.');
+    if (in_array($request->jabatan, ['Ketua', 'Sekretaris']) &&
+        Anggota::where('organisasi_id', $organisasi->id)
+               ->where('jabatan', $request->jabatan)
+               ->exists()) {
+        return back()->with('error', "Jabatan {$request->jabatan} sudah terisi.")
+                     ->with('tab', 'anggota');
     }
 
-    // 🚨 Tambahkan validasi peran jabatan agar tidak duplikat
-    $jabatan = $request->jabatan;
-    if (in_array($jabatan, ['Ketua', 'Sekretaris'])) {
-        $sudahAda = Anggota::where('organisasi_id', $organisasi->id)
-            ->where('jabatan', $jabatan)
-            ->exists();
+    Anggota::create(array_merge($request->all(), ['organisasi_id' => $organisasi->id]));
 
-        if ($sudahAda) {
-            return back()->with('error', "Jabatan $jabatan sudah terisi, tidak boleh ganda.");
-        }
-    }
-
-    // Simpan data anggota baru
-    Anggota::create([
-        'organisasi_id' => $organisasi->id,
-        'nama' => $request->nama,
-        'nik' => $request->nik,
-        'jabatan' => $request->jabatan,
-        'jenis_kelamin' => $request->jenis_kelamin,
-        'tanggal_lahir' => $request->tanggal_lahir,
-        'pekerjaan' => $request->pekerjaan,
-        'alamat' => $request->alamat,
-        'telepon' => $request->telepon,
-        'whatsapp' => $request->whatsapp,
-    ]);
-
-    // ✅ Cek apakah organisasi sudah punya Ketua dan Sekretaris
-    $punyaKetua = Anggota::where('organisasi_id', $organisasi->id)
-        ->where('jabatan', 'Ketua')
-        ->exists();
-    $punyaSekretaris = Anggota::where('organisasi_id', $organisasi->id)
-        ->where('jabatan', 'Sekretaris')
-        ->exists();
-
-    if ($punyaKetua && $punyaSekretaris) {
-        return redirect()->route('user.anggota.index')
-            ->with('success', 'Anggota berhasil ditambahkan! Struktur organisasi lengkap (Ketua & Sekretaris ada).');
-    } else {
-        return redirect()->route('user.anggota.index')
-            ->with('warning', 'Anggota berhasil ditambahkan, tapi pastikan sudah ada Ketua dan Sekretaris.');
-    }
-}
-
-    public function edit($id)
-{
-    $anggota = Anggota::findOrFail($id);
-    $organisasi = Organisasi::where('user_id', Auth::id())->first();
-
-    // Cegah user mengedit anggota milik organisasi lain
-    if ($anggota->organisasi_id != $organisasi->id) {
-        return redirect()->route('user.anggota.index')->with('error', 'Anda tidak berhak mengedit data ini.');
-    }
-
-    return view('user.anggota.edit', compact('anggota', 'organisasi'));
+    return back()->with('success', 'Anggota berhasil ditambahkan!')->with('tab', 'anggota');
 }
 
 public function update(Request $request, $id)
 {
-    $request->validate([
-        'nama' => 'required|string|max:255',
-        'nik' => 'required|string|max:20|unique:kik_anggota,nik,' . $id,
-        'jabatan' => 'nullable|string|max:100',
-        'jenis_kelamin' => 'required|in:L,P',
-        'tanggal_lahir' => 'nullable|date',
-        'pekerjaan' => 'nullable|string|max:255',
-        'alamat' => 'nullable|string|max:255',
-        'telepon' => 'nullable|string|max:20',
-        'whatsapp' => 'nullable|string|max:20',
-    ]);
-
     $anggota = Anggota::findOrFail($id);
-    $organisasi = Organisasi::where('user_id', Auth::id())->first();
+    $organisasi = Organisasi::where('user_id', Auth::id())->firstOrFail();
 
     if ($anggota->organisasi_id != $organisasi->id) {
-        return redirect()->route('user.anggota.index')->with('error', 'Tidak diizinkan mengedit data ini.');
+        return back()->with('error', 'Tidak diizinkan mengedit data ini.')->with('tab', 'anggota');
     }
 
-    // Simpan nilai lama jika tanggal lahir tidak diisi
-    $data = $request->only([
-        'nama', 'nik', 'jabatan', 'jenis_kelamin', 'tanggal_lahir',
-        'pekerjaan', 'alamat', 'telepon', 'whatsapp'
+    $request->validate([
+        'nama','nik','jabatan','jenis_kelamin','tanggal_lahir','pekerjaan','alamat','telepon','whatsapp'
     ]);
 
-    if (empty($data['tanggal_lahir'])) {
-        $data['tanggal_lahir'] = $anggota->tanggal_lahir; // pertahankan tanggal lama
+    if (in_array($request->jabatan, ['Ketua', 'Sekretaris']) &&
+        Anggota::where('organisasi_id', $organisasi->id)
+               ->where('jabatan', $request->jabatan)
+               ->where('id', '!=', $anggota->id)
+               ->exists()) {
+        return back()->with('error', "Jabatan {$request->jabatan} sudah terisi.")->with('tab', 'anggota');
     }
 
-    $anggota->update($data);
+    $anggota->update($request->only([
+        'nama','nik','jabatan','jenis_kelamin','tanggal_lahir',
+        'pekerjaan','alamat','telepon','whatsapp'
+    ]));
 
-    return redirect()->route('user.anggota.index')->with('success', 'Data anggota berhasil diperbarui!');
+    return back()->with('success', 'Data anggota berhasil diperbarui!')->with('tab', 'anggota');
 }
-
 
 public function destroy($id)
 {
     $anggota = Anggota::findOrFail($id);
-    $organisasi = Organisasi::where('user_id', Auth::id())->first();
+    $organisasi = Organisasi::where('user_id', Auth::id())->firstOrFail();
 
     if ($anggota->organisasi_id != $organisasi->id) {
-        return redirect()->route('user.anggota.index')->with('error', 'Tidak diizinkan menghapus data ini.');
+        return back()->with('error', 'Tidak diizinkan menghapus data ini.')->with('tab', 'anggota');
     }
 
     $anggota->delete();
 
-    return redirect()->route('user.anggota.index')->with('success', 'Data anggota berhasil dihapus!');
+    return back()->with('success', 'Data anggota berhasil dihapus!')->with('tab', 'anggota');
 }
 }

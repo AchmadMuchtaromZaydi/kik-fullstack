@@ -11,7 +11,7 @@ class Organisasi extends Model
     protected $table = 'kik_organisasi';
 
     protected $fillable = [
-        'uuid', 'nomor_induk', 'nama', 'nama_ketua', 'no_telp_ketua',
+        'nomor_induk', 'nama', 'nama_ketua', 'no_telp_ketua',
         'tanggal_berdiri', 'tanggal_daftar', 'tanggal_expired',
         'alamat', 'desa', 'kecamatan', 'kabupaten', 'jenis_kesenian',
         'sub_kesenian', 'jumlah_anggota', 'status', 'user_id', 'keterangan',
@@ -40,15 +40,15 @@ class Organisasi extends Model
      |  BOOT
      | -----------------------------------------------------------------
      */
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = Str::uuid()->toString();
-            }
-        });
-    }
+    // protected static function boot()
+    // {
+    //     parent::boot();
+    //     static::creating(function ($model) {
+    //         if (empty($model->uuid)) {
+    //             $model->uuid = Str::uuid()->toString();
+    //         }
+    //     });
+    // }
 
     /* -----------------------------------------------------------------
      |  ACCESSORS UMUM

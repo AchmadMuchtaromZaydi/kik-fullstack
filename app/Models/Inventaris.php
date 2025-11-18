@@ -18,4 +18,9 @@ class Inventaris extends Model
         'keterangan',
         'validasi',
     ];
+
+      public function organisasi()
+    {
+        return $this->belongsTo(Organisasi::class);
+    }
 }

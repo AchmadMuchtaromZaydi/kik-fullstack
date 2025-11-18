@@ -11,102 +11,60 @@ use Illuminate\Support\Facades\DB;
 class OrganisasiController extends Controller
 {
     /**
-     * Menampilkan daftar organisasi milik user.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function index()
-    {
-        $user = Auth::user();
-
-        // Ambil data organisasi, sudah termasuk nama jenis kesenian (via eager loading)
-        // Kita juga tambahkan select() untuk efisiensi, hanya mengambil kolom yang perlu.
-        $organisasi = Organisasi::with([
-                'jenisKesenianObj:id,nama',
-                'subKesenianObj:id,nama'
-            ])
-            ->select(
-                'id', 'nama', 'status', 'jenis_kesenian', 'sub_kesenian',
-                'kabupaten', 'nama_kecamatan', 'nama_desa', // <-- Nama wilayah sudah ada di sini
-                'nomor_induk', 'tanggal_expired' // <-- Kolom tambahan untuk view (opsional)
-            )
-            ->where('user_id', $user->id)
-            ->get();
-
-        // ===================================================================
-        // PERBAIKAN N+1 PROBLEM:
-        // Seluruh foreach loop dihapus dari sini.
-        // Data nama wilayah (kabupaten, nama_kecamatan, nama_desa)
-        // sudah diambil langsung dari tabel 'kik_organisasi' di query atas.
-        // Pastikan view Anda memanggil $org->kabupaten, $org->nama_kecamatan, $org->nama_desa
-        // ===================================================================
-
-        return view('user.organisasi.index', compact('organisasi'));
-    }
-
-    /**
-     * Menampilkan form untuk membuat organisasi baru.
-     *
-     * @return \Illuminate\View\View
+     * Tampilkan form create/edit organisasi
      */
     public function create()
     {
-        // Query ini sudah efisien
         $jenisKesenian = JenisKesenian::whereNull('parent')->get();
-        $kabupaten = DB::table('wilayah')->whereRaw('LENGTH(kode) = 5')->get();
+        $kabupaten = DB::table('wilayah')
+            ->whereRaw('LENGTH(kode) = 5')
+            ->get();
 
-        return view('user.organisasi.create', compact('jenisKesenian', 'kabupaten'));
+        // Ambil data organisasi user jika sudah ada
+        $organisasi = Organisasi::where('user_id', Auth::id())->first();
+
+        return view('user.organisasi.create', compact('jenisKesenian', 'kabupaten', 'organisasi'));
     }
 
     /**
-     * Mengambil data Sub Kesenian berdasarkan parent (AJAX).
-     *
-     * @param  int  $parent_id
-     * @return \Illuminate\Http\JsonResponse
+     * Ambil sub kesenian berdasarkan parent
      */
     public function getSubKesenian($parent_id)
     {
-        $subKesenian = JenisKesenian::where('parent', $parent_id)->get(['id', 'nama']);
+        $subKesenian = JenisKesenian::where('parent', $parent_id)
+            ->get(['id', 'nama']);
+
         return response()->json($subKesenian);
     }
 
     /**
-     * Mengambil data Kecamatan berdasarkan kabupaten (AJAX).
-     *
-     * @param  string  $kabupatenKode
-     * @return \Illuminate\Http\JsonResponse
+     * Ambil kecamatan berdasarkan kabupaten
      */
     public function getKecamatan($kabupatenKode)
     {
-        // Query ini sudah efisien
         $kecamatan = DB::table('wilayah')
             ->where('kode', 'LIKE', $kabupatenKode . '.%')
             ->whereRaw('LENGTH(kode) = 8')
             ->get(['kode', 'nama']);
+
         return response()->json($kecamatan);
     }
 
     /**
-     * Mengambil data Desa berdasarkan kecamatan (AJAX).
-     *
-     * @param  string  $kecamatanKode
-     * @return \Illuminate\Http\JsonResponse
+     * Ambil desa berdasarkan kecamatan
      */
     public function getDesa($kecamatanKode)
     {
-        // Query ini sudah efisien
         $desa = DB::table('wilayah')
             ->where('kode', 'LIKE', $kecamatanKode . '.%')
             ->whereRaw('LENGTH(kode) = 13')
             ->get(['kode', 'nama']);
+
         return response()->json($desa);
     }
 
     /**
-     * Menyimpan organisasi baru ke database.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * Simpan atau update data organisasi
      */
     public function store(Request $request)
     {
@@ -126,47 +84,38 @@ class OrganisasiController extends Controller
         $sub = JenisKesenian::find($request->sub_kesenian);
 
         if (!$jenis || !$sub) {
-            return redirect()->back()->with('error', 'Jenis kesenian atau sub jenis tidak valid.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Jenis atau Sub Jenis Kesenian tidak valid.'
+            ], 422);
         }
 
-        if (Organisasi::where('user_id', Auth::id())->exists()) {
-            return redirect()->route('user.organisasi.index')
-                ->with('warning', 'Anda sudah memiliki organisasi.');
-        }
+        $kabupaten = DB::table('wilayah')->where('kode', $request->kabupaten_kode)->value('nama');
+        $kecamatan = DB::table('wilayah')->where('kode', $request->kecamatan_kode)->value('nama');
+        $desa = DB::table('wilayah')->where('kode', $request->desa_kode)->value('nama');
 
-        // Ambil nama wilayah (3 query ini tidak masalah, hanya terjadi sekali saat 'store')
-        $kabupaten_nama = DB::table('wilayah')->where('kode', $request->kabupaten_kode)->value('nama');
-        $kecamatan_nama = DB::table('wilayah')->where('kode', $request->kecamatan_kode)->value('nama');
-        $desa_nama = DB::table('wilayah')->where('kode', $request->desa_kode)->value('nama');
+        // Simpan atau update data berdasarkan user_id
+        $organisasi = Organisasi::updateOrCreate(
+            ['user_id' => Auth::id()],
+            [
+                'nama' => $request->nama,
+                'tanggal_berdiri' => $request->tanggal_berdiri,
+                'jenis_kesenian' => $jenis->id,
+                'sub_kesenian' => $sub->id,
+                'nama_jenis_kesenian' => $jenis->nama,
+                'nama_sub_kesenian' => $sub->nama,
+                'jumlah_anggota' => $request->jumlah_anggota,
+                'kabupaten' => $kabupaten,
+                'kecamatan' => $kecamatan,
+                'desa' => $desa,
+                'alamat' => $request->alamat_lengkap,
+                'status' => 'Request',
+            ]
+        );
 
-        // ===================================================================
-        // PERBAIKAN LOGIKA PENYIMPANAN:
-        // Menyesuaikan data yang disimpan dengan struktur tabel 'kik_organisasi'
-        // yang Anda tunjukkan di screenshot.
-        // ===================================================================
-        Organisasi::create([
-            'user_id' => Auth::id(),
-            'nama' => $request->nama,
-            'tanggal_berdiri' => $request->tanggal_berdiri,
-            'jenis_kesenian' => $request->jenis_kesenian,
-            'sub_kesenian' => $request->sub_kesenian,
-            'jumlah_anggota' => $request->jumlah_anggota,
-
-            // Menyimpan KODE Wilayah
-            'kecamatan' => $request->kecamatan_kode, // 'kecamatan' diisi KODE
-            'desa' => $request->desa_kode,           // 'desa' diisi KODE
-
-            // Menyimpan NAMA Wilayah (Denormalisasi untuk kecepatan read)
-            'kabupaten' => $kabupaten_nama,         // 'kabupaten' diisi NAMA
-            'nama_kecamatan' => $kecamatan_nama,    // 'nama_kecamatan' diisi NAMA
-            'nama_desa' => $desa_nama,            // 'nama_desa' diisi NAMA
-
-            'alamat' => $request->alamat_lengkap,
-            'status' => 'Request',
-            'tanggal_daftar' => now(), // Menambahkan tanggal daftar saat create
-        ]);
-
-        return redirect()->route('user.organisasi.index')
-            ->with('success', 'Data organisasi berhasil disimpan!');
-    }
+     return response()->json([
+    'success_organisasi' => true,
+    'message' => 'Data organisasi berhasil disimpan!',
+]);
+}
 }

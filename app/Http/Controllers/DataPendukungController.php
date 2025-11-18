@@ -2,127 +2,92 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DataPendukung;
-use App\Models\Inventaris;
-use App\Models\Organisasi;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\DataPendukung;
+use App\Models\Organisasi;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class DataPendukungController extends Controller
 {
-    // ========================
-    // PRIVATE HELPERS
-    // ========================
-
-    private function getOrganisasi()
+    /**
+     * Halaman utama upload data pendukung
+     */
+    public function index()
     {
         $organisasi = Organisasi::where('user_id', Auth::id())->first();
 
         if (!$organisasi) {
-            return redirect()->route('user.organisasi.index')
+            return redirect()
+                ->route('user.organisasi.create')
                 ->with('error', 'Silakan isi data organisasi terlebih dahulu.');
         }
 
-        return $organisasi;
-    }
-
-    private function checkInventaris($organisasi)
-    {
-        $inventarisCount = Inventaris::where('organisasi_id', $organisasi->id)->count();
-
-        if ($inventarisCount < $organisasi->jumlah_anggota) {
-            return redirect()->route('user.inventaris.index')
-                ->with('warning', 'Lengkapi semua data inventaris terlebih dahulu. Minimal ' . $organisasi->jumlah_anggota . ' item inventaris.');
-        }
-
-        return null;
-    }
-
-    // ========================
-    // CONTROLLER METHODS
-    // ========================
-
-    public function index()
-    {
-        $organisasi = $this->getOrganisasi();
-        if ($organisasi instanceof \Illuminate\Http\RedirectResponse) return $organisasi;
-
-        if ($response = $this->checkInventaris($organisasi)) return $response;
-
+        // Ambil semua data pendukung untuk organisasi ini
         $dataPendukung = DataPendukung::where('organisasi_id', $organisasi->id)->get();
 
-        return view('user.pendukung.index', compact('dataPendukung', 'organisasi'));
+        return view('user.pendukung.index', compact('organisasi', 'dataPendukung'));
     }
 
-    public function create()
-    {
-        $organisasi = $this->getOrganisasi();
-        if ($organisasi instanceof \Illuminate\Http\RedirectResponse) return $organisasi;
-
-        if ($response = $this->checkInventaris($organisasi)) return $response;
-
-        return view('user.pendukung.create', compact('organisasi'));
-    }
-
+    /**
+     * Simpan file pendukung (AJAX)
+     */
     public function store(Request $request)
     {
         $request->validate([
-            'tipe' => 'required|in:ktp,photo,banner,poster,kegiatan',
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-        ], [
-            'tipe.required' => 'Jenis data pendukung harus dipilih.',
-            'image.image' => 'File harus berupa gambar.',
-            'image.mimes' => 'Format foto harus JPG atau PNG.',
-            'image.max' => 'Ukuran foto maksimal 2MB.',
+            'file' => 'required|image|mimes:jpg,jpeg,png,svg|max:2048',
+            'tipe' => 'required|string|in:KTP,PAS_FOTO,BANNER,FOTO-KEGIATAN'
         ]);
 
-        $organisasi = $this->getOrganisasi();
-        if ($organisasi instanceof \Illuminate\Http\RedirectResponse) return $organisasi;
+        $organisasi = Organisasi::where('user_id', Auth::id())->firstOrFail();
 
-        if ($response = $this->checkInventaris($organisasi)) return $response;
-
-        // Batasi hanya satu foto kegiatan
-        if ($request->tipe === 'kegiatan') {
-            $cekKegiatan = DataPendukung::where('organisasi_id', $organisasi->id)
-                ->where('tipe', 'kegiatan')
-                ->first();
-            if ($cekKegiatan) {
-                return back()->with('error', 'Foto kegiatan sudah diunggah sebelumnya.');
-            }
+        // Buat folder organisasi jika belum ada
+        $folder = "uploads/organisasi/{$organisasi->id}";
+        if (!Storage::exists("public/{$folder}")) {
+            Storage::makeDirectory("public/{$folder}");
         }
 
-        // Simpan file
-        $path = $request->file('image')->store('data_pendukung', 'public');
+        $file = $request->file('file');
+        $filename = strtoupper($request->tipe) . '-' . uniqid() . '.' . $file->getClientOriginalExtension();
 
-        DataPendukung::create([
+        // Simpan file di storage
+        $file->storeAs("public/{$folder}", $filename);
+
+        // Simpan record ke database
+        $data = DataPendukung::create([
+            'tipe'          => strtoupper($request->tipe),
+            'image'         => $filename,
             'organisasi_id' => $organisasi->id,
-            'tipe' => $request->tipe,
-            'image' => $path,
-            'validasi' => 0,
+            'validasi'      => null
         ]);
 
-        return redirect()->route('user.pendukung.index')
-            ->with('success', 'Data pendukung berhasil diunggah!');
+        return response()->json([
+            'success' => true,
+            'data'    => $data,
+            'url'     => asset("storage/{$folder}/{$filename}")
+        ]);
     }
 
+    /**
+     * Hapus file pendukung (AJAX)
+     */
     public function destroy($id)
     {
         $data = DataPendukung::findOrFail($id);
-        $organisasi = $this->getOrganisasi();
-        if ($organisasi instanceof \Illuminate\Http\RedirectResponse) return $organisasi;
 
-        if ($data->organisasi_id != $organisasi->id) {
-            return redirect()->route('user.pendukung.index')
-                ->with('error', 'Anda tidak berhak menghapus data ini.');
+        // Pastikan user hanya bisa hapus file miliknya
+        if ($data->organisasi->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
         }
 
-        if ($data->image && Storage::disk('public')->exists($data->image)) {
-            Storage::disk('public')->delete($data->image);
+        $path = "public/uploads/organisasi/{$data->organisasi_id}/{$data->image}";
+
+        if (Storage::exists($path)) {
+            Storage::delete($path);
         }
 
         $data->delete();
 
-        return redirect()->route('user.pendukung.index')->with('success', 'Data pendukung berhasil dihapus!');
+        return response()->json(['success' => true]);
     }
 }
