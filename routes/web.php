@@ -82,6 +82,10 @@ Route::prefix('user-kik')->name('user.')->middleware(['auth', 'role:user-kik'])-
     Route::get('/pendukung', [DataPendukungController::class, 'index'])->name('pendukung.index');
     Route::post('/pendukung', [DataPendukungController::class, 'store'])->name('pendukung.store');
     Route::delete('/pendukung/{id}', [DataPendukungController::class, 'destroy'])->name('pendukung.destroy');
+
+    Route::get('/perpanjang', [PerpanjangController::class, 'index'])->name('perpanjang.index');
+    Route::post('/perpanjang/check', [PerpanjangController::class, 'check'])->name('perpanjang.check');
+
 });
 
 

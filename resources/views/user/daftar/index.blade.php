@@ -41,22 +41,39 @@
             <div class="card shadow-sm border-0">
                 <div class="card-body" id="tab-content">
 
-                    <!-- TAB 1: PERHATIAN -->
-                    <div id="tab-perhatian" class="tab-pane active">
-                        <div class="alert alert-warning d-flex align-items-center">
-                            <i class="fas fa-exclamation-circle me-2"></i>
-                            <div>Isi seluruh data dengan lengkap dan benar sebelum melanjutkan ke tahap berikutnya.</div>
+                     <!-- TAB 1: PERHATIAN -->
+                        <div id="tab-perhatian" class="tab-pane active">
+
+                            <div class="alert alert-warning d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <div>
+                                    Isi seluruh data dengan lengkap dan benar sebelum melanjutkan ke tahap berikutnya.
+                                </div>
+                            </div>
+
+                            <h5 class="fw-bold text-primary">Perhatian</h5>
+                            <p>
+                                Anda akan melakukan pendaftaran <strong>Kartu Induk Kesenian Banyuwangi</strong>.
+                                Mohon isi data dengan benar dan sesuai dengan jenis kesenian Anda.
+                            </p>
+
+                            <!-- Tombol Kembali & Selanjutnya -->
+                            <div class="d-flex justify-content-between mt-3">
+
+                                <!-- Tombol Kembali ke Dashboard -->
+                                <a href="{{ route('user.dashboard') }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i> Kembali
+                                </a>
+
+                                <div class="text-end">
+                                    <button class="btn btn-primary next-tab" data-next="#tab-organisasi">
+                                        Selanjutnya <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+
+                            </div>
                         </div>
 
-                        <h5 class="fw-bold text-primary">Perhatian</h5>
-                        <p>Anda akan melakukan pendaftaran <strong>Kartu Induk Kesenian Banyuwangi</strong>. Mohon isi data dengan benar dan sesuai dengan jenis kesenian Anda.</p>
-
-                        <div class="text-end mt-3">
-                            <button class="btn btn-primary next-tab" data-next="#tab-organisasi">
-                                Selanjutnya <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
-                        </div>
-                    </div>
 
                     <!-- TAB 2: ORGANISASI -->
                     <div id="tab-organisasi" class="tab-pane d-none">

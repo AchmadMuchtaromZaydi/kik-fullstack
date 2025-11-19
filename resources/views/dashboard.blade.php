@@ -82,7 +82,7 @@
                     </div>
                     <h5 class="card-title fw-bold">Perpanjangan Kartu</h5>
                     <p class="text-muted small mb-4">Perpanjang masa berlaku Kartu Identitas Kesenian Anda.</p>
-                    <a href="#" class="btn btn-primary w-100">
+                      <a href="{{ route('user.perpanjang.index') }}" class="btn btn-primary w-100">
                         <i class="fas fa-redo me-2"></i>Perpanjang Sekarang
                     </a>
                 </div>

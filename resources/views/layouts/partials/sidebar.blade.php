@@ -46,7 +46,7 @@
                         <i class="fas fa-home me-2"></i>Dashboard
                     </a>
 
-                    <a class="nav-link {{ Request::is('user-kik/organisasi*') ? 'active' : '' }}"
+                    {{-- <a class="nav-link {{ Request::is('user-kik/organisasi*') ? 'active' : '' }}"
                         href="{{ route('user.organisasi.index') }}">
                         <i class="fas fa-building me-2"></i>Data Organisasi
                     </a>
@@ -69,7 +69,7 @@
                     <a class="nav-link {{ Request::is('user-kik/validasi*') ? 'active' : '' }}"
                         href="{{ route('user.validasi.index') }}">
                         <i class="fas fa-check-circle me-2"></i>Verifikasi Data
-                    </a>
+                    </a> --}}
                 @endif
 
                 {{-- =======================
