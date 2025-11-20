@@ -95,7 +95,12 @@
                             <td>{{ $a->nik }}</td>
                             <td>{{ $a->nama }}</td>
                             <td>{{ $a->jenis_kelamin }}</td>
-                            <td>{{ $a->tanggal_lahir ? \Carbon\Carbon::parse($a->tanggal_lahir)->age : '-' }}</td>
+                           <td>
+                                @php
+                                    $umur = $a->tanggal_lahir ? \Carbon\Carbon::parse($a->tanggal_lahir)->age : null;
+                                @endphp
+                                {{ $umur !== null ? $umur . ' th' : '-' }}
+                            </td>
                             <td>{{ $a->jabatan }}</td>
                             <td>{{ $a->telepon ?? $a->whatsapp ?? '-' }}</td>
                             <td>
