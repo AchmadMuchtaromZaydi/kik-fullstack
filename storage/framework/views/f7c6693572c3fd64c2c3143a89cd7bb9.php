@@ -1,4 +1,4 @@
-@php
+<?php
     // Cek variabel dari Controller, jika tidak ada cari manual
     if (!isset($dataPendukung)) {
         $organisasi = \App\Models\Organisasi::where('user_id', Auth::id())->first();
@@ -11,7 +11,7 @@
             $dataPendukung = collect();
         }
     }
-@endphp
+?>
 
 <div class="p-4">
     <h4 class="fw-bold mb-4">Upload Data Pendukung</h4>
@@ -20,11 +20,11 @@
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
 
-            {{-- ================= 1. KTP (SINGLE) ================= --}}
+            
             <div class="mb-4">
                 <label class="form-label fw-semibold">Foto KTP <span class="text-danger">*</span></label>
                 <div class="upload-box border border-2 rounded-3 p-4 text-center bg-light cursor-pointer
-                    @if(isset($dataPendukung) && $dataPendukung->where('tipe','KTP')->count()) has-file @endif"
+                    <?php if(isset($dataPendukung) && $dataPendukung->where('tipe','KTP')->count()): ?> has-file <?php endif; ?>"
                     data-tipe="KTP">
 
                     <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2 upload-icon"></i>
@@ -32,21 +32,21 @@
                     <input type="file" class="d-none uploader" accept=".jpg,.png,.jpeg,.svg">
 
                     <div class="mt-2" id="preview-KTP">
-                        @foreach($dataPendukung->where('tipe','KTP') as $file)
-                            <div class="position-relative d-inline-block me-2 mb-2" id="file-{{ $file->id }}">
+                        <?php $__currentLoopData = $dataPendukung->where('tipe','KTP'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $file): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <div class="position-relative d-inline-block me-2 mb-2" id="file-<?php echo e($file->id); ?>">
                                 <button type="button" class="btn-close position-absolute top-0 end-0 m-1 deleteFile"></button>
-                                <img src="{{ asset('storage/uploads/organisasi/'.$organisasi->id.'/'.$file->image) }}" class="img-preview">
+                                <img src="<?php echo e(asset('storage/uploads/organisasi/'.$organisasi->id.'/'.$file->image)); ?>" class="img-preview">
                             </div>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
                 </div>
             </div>
 
-            {{-- ================= 2. PAS FOTO (SINGLE) ================= --}}
+            
             <div class="mb-4">
                 <label class="form-label fw-semibold">Pas Foto <span class="text-danger">*</span></label>
                 <div class="upload-box border border-2 rounded-3 p-4 text-center bg-light cursor-pointer
-                    @if(isset($dataPendukung) && $dataPendukung->where('tipe','PAS_FOTO')->count()) has-file @endif"
+                    <?php if(isset($dataPendukung) && $dataPendukung->where('tipe','PAS_FOTO')->count()): ?> has-file <?php endif; ?>"
                     data-tipe="PAS_FOTO">
 
                     <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2 upload-icon"></i>
@@ -54,21 +54,21 @@
                     <input type="file" class="d-none uploader" accept=".jpg,.png,.jpeg,.svg">
 
                     <div class="mt-2" id="preview-PAS_FOTO">
-                        @foreach($dataPendukung->where('tipe','PAS_FOTO') as $file)
-                            <div class="position-relative d-inline-block me-2 mb-2" id="file-{{ $file->id }}">
+                        <?php $__currentLoopData = $dataPendukung->where('tipe','PAS_FOTO'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $file): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <div class="position-relative d-inline-block me-2 mb-2" id="file-<?php echo e($file->id); ?>">
                                 <button type="button" class="btn-close position-absolute top-0 end-0 m-1 deleteFile"></button>
-                                <img src="{{ asset('storage/uploads/organisasi/'.$organisasi->id.'/'.$file->image) }}" class="img-preview">
+                                <img src="<?php echo e(asset('storage/uploads/organisasi/'.$organisasi->id.'/'.$file->image)); ?>" class="img-preview">
                             </div>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
                 </div>
             </div>
 
-            {{-- ================= 3. BANNER (SINGLE) ================= --}}
+            
             <div class="mb-4">
                 <label class="form-label fw-semibold">Banner / Poster Organisasi <span class="text-danger">*</span></label>
                 <div class="upload-box border border-2 rounded-3 p-4 text-center bg-light cursor-pointer
-                    @if(isset($dataPendukung) && $dataPendukung->where('tipe','BANNER')->count()) has-file @endif"
+                    <?php if(isset($dataPendukung) && $dataPendukung->where('tipe','BANNER')->count()): ?> has-file <?php endif; ?>"
                     data-tipe="BANNER">
 
                     <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2 upload-icon"></i>
@@ -76,40 +76,40 @@
                     <input type="file" class="d-none uploader" accept=".jpg,.png,.jpeg,.svg">
 
                     <div class="mt-2" id="preview-BANNER">
-                        @foreach($dataPendukung->where('tipe','BANNER') as $file)
-                            <div class="position-relative d-inline-block me-2 mb-2" id="file-{{ $file->id }}">
+                        <?php $__currentLoopData = $dataPendukung->where('tipe','BANNER'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $file): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <div class="position-relative d-inline-block me-2 mb-2" id="file-<?php echo e($file->id); ?>">
                                 <button type="button" class="btn-close position-absolute top-0 end-0 m-1 deleteFile"></button>
-                                <img src="{{ asset('storage/uploads/organisasi/'.$organisasi->id.'/'.$file->image) }}" class="img-preview">
+                                <img src="<?php echo e(asset('storage/uploads/organisasi/'.$organisasi->id.'/'.$file->image)); ?>" class="img-preview">
                             </div>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
                 </div>
             </div>
 
-            {{-- ================= 4. FOTO KEGIATAN (GRID / MULTIPLE) ================= --}}
+            
             <div class="mb-4">
                 <label class="form-label fw-semibold">Foto Kegiatan (bisa lebih dari satu)</label>
 
-                {{-- Container Grid --}}
+                
                 <div class="row g-3" id="container-FOTO-KEGIATAN">
 
-                    {{-- Loop Gambar yang Sudah Ada --}}
-                    @foreach($dataPendukung->where('tipe','FOTO-KEGIATAN') as $file)
-                        <div class="col-6 col-md-3" id="file-{{ $file->id }}">
+                    
+                    <?php $__currentLoopData = $dataPendukung->where('tipe','FOTO-KEGIATAN'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $file): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <div class="col-6 col-md-3" id="file-<?php echo e($file->id); ?>">
                             <div class="photo-card position-relative">
                                 <button type="button" class="btn-close position-absolute top-0 end-0 m-2 bg-white deleteFile shadow-sm" style="z-index: 10;"></button>
-                                <img src="{{ asset('storage/uploads/organisasi/'.$organisasi->id.'/'.$file->image) }}" class="img-grid">
+                                <img src="<?php echo e(asset('storage/uploads/organisasi/'.$organisasi->id.'/'.$file->image)); ?>" class="img-grid">
                             </div>
                         </div>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-                    {{-- Tombol Tambah (Selalu Muncul di Akhir) --}}
+                    
                     <div class="col-6 col-md-3" id="btn-add-wrapper">
                         <div class="add-photo-btn" id="trigger-upload-kegiatan">
                             <i class="fas fa-plus-circle fa-2x text-muted mb-2"></i>
                             <span class="text-muted small fw-bold">Tambah Foto</span>
                         </div>
-                        {{-- Input file tetap hidden --}}
+                        
                         <input type="file" class="d-none uploader-grid" data-tipe="FOTO-KEGIATAN" accept=".jpg,.png,.jpeg,.svg" multiple>
                     </div>
 
@@ -139,7 +139,7 @@
 </div>
 </div>
 
-{{-- CSS --}}
+
 <style>
 /* --- STYLE SINGLE UPLOAD (KTP, BANNER) --- */
 .upload-box.has-file .upload-icon,
@@ -205,8 +205,8 @@
 }
 </style>
 
-{{-- SCRIPT --}}
-@push('scripts')
+
+<?php $__env->startPush('scripts'); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -264,9 +264,9 @@ document.addEventListener('DOMContentLoaded', function() {
         let formData = new FormData();
         formData.append('file', file);
         formData.append('tipe', tipe);
-        formData.append('_token', "{{ csrf_token() }}");
+        formData.append('_token', "<?php echo e(csrf_token()); ?>");
 
-        fetch("{{ route('user.pendukung.store') }}", {
+        fetch("<?php echo e(route('user.pendukung.store')); ?>", {
             method: "POST",
             body: formData
         })
@@ -309,9 +309,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const id = wrapper.id.replace('file-', '');
             const boxSingle = wrapper.closest('.upload-box');
 
-            fetch(`{{ url('user-kik/pendukung') }}/${id}`, {
+            fetch(`<?php echo e(url('user-kik/pendukung')); ?>/${id}`, {
                 method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" }
+                headers: { 'X-CSRF-TOKEN': "<?php echo e(csrf_token()); ?>" }
             })
             .then(res => res.json())
             .then(res => {
@@ -350,4 +350,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+<?php /**PATH D:\Main\kik-fullstack\resources\views/user/pendukung/index.blade.php ENDPATH**/ ?>

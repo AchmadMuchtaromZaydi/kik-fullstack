@@ -10,18 +10,18 @@
                 sudah lengkap dan benar sebelum mengirim pengajuan.
             </p>
 
-            {{-- Pesan sukses / error --}}
-             @if (session('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
-            @endif
+            
+             <?php if(session('success')): ?>
+                <div class="alert alert-success"><?php echo e(session('success')); ?></div>
+            <?php endif; ?>
 
-            @if (session('error'))
-                <div class="alert alert-danger">{{ session('error') }}</div>
-            @endif
+            <?php if(session('error')): ?>
+                <div class="alert alert-danger"><?php echo e(session('error')); ?></div>
+            <?php endif; ?>
 
-            {{-- UPDATE: Arahkan action ke route daftar.submit --}}
-            <form action="{{ route('user.daftar.submit') }}" method="POST">
-                @csrf
+            
+            <form action="<?php echo e(route('user.daftar.submit')); ?>" method="POST">
+                <?php echo csrf_field(); ?>
 
                 <div class="d-flex justify-content-between mt-4">
 
@@ -42,3 +42,4 @@
     </div>
 
 </div>
+<?php /**PATH D:\Main\kik-fullstack\resources\views/user/review/index.blade.php ENDPATH**/ ?>

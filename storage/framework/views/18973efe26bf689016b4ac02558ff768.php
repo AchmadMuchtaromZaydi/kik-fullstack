@@ -1,5 +1,5 @@
 <div class="p-4">
-    {{-- FLASH MESSAGE OTOMATIS (dari sessionStorage) --}}
+    
     <div id="flash-area"></div>
 
     <h4 class="fw-bold mb-4">Data Organisasi</h4>
@@ -7,67 +7,70 @@
 
     <div class="card shadow-sm border-0">
         <div class="card-body">
-            <form id="formOrganisasi" action="{{ route('user.organisasi.store') }}" method="POST">
-                @csrf
+            <form id="formOrganisasi" action="<?php echo e(route('user.organisasi.store')); ?>" method="POST">
+                <?php echo csrf_field(); ?>
 
-                {{-- Nama & Tanggal Berdiri --}}
+                
                 <div class="row mb-3">
                     <div class="col-md-8">
                         <label class="form-label fw-semibold">Nama Organisasi</label>
-                        <input type="text" name="nama" class="form-control" required value="{{ $organisasi->nama ?? '' }}">
+                        <input type="text" name="nama" class="form-control" required value="<?php echo e($organisasi->nama ?? ''); ?>">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Tanggal Berdiri</label>
-                       <input type="date" name="tanggal_berdiri" class="form-control" required value="{{ isset($organisasi->tanggal_berdiri) ? \Carbon\Carbon::parse($organisasi->tanggal_berdiri)->format('Y-m-d') : '' }}">
+                       <input type="date" name="tanggal_berdiri" class="form-control" required value="<?php echo e(isset($organisasi->tanggal_berdiri) ? \Carbon\Carbon::parse($organisasi->tanggal_berdiri)->format('Y-m-d') : ''); ?>">
                     </div>
                 </div>
 
-                {{-- Jenis & Sub --}}
+                
                 <div class="row mb-3">
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Jenis Kesenian</label>
                         <select name="jenis_kesenian" id="jenis_kesenian" class="form-select" required>
                             <option value="">-- Pilih Jenis Kesenian --</option>
-                            @foreach($jenisKesenian as $jenis)
-                                <option value="{{ $jenis->id }}" @selected(isset($organisasi) && $organisasi->jenis_kesenian == $jenis->id)>
-                                    {{ $jenis->nama }}
+                            <?php $__currentLoopData = $jenisKesenian; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $jenis): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($jenis->id); ?>" <?php if(isset($organisasi) && $organisasi->jenis_kesenian == $jenis->id): echo 'selected'; endif; ?>>
+                                    <?php echo e($jenis->nama); ?>
+
                                 </option>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Sub Jenis</label>
                         <select name="sub_kesenian" id="sub_kesenian" class="form-select" required>
                             <option value="">-- Pilih Sub Jenis --</option>
-                            @if(isset($organisasi))
-                                @foreach(\App\Models\JenisKesenian::where('parent', $organisasi->jenis_kesenian)->get() as $sub)
-                                    <option value="{{ $sub->id }}" @selected($organisasi->sub_kesenian == $sub->id)>
-                                        {{ $sub->nama }}
+                            <?php if(isset($organisasi)): ?>
+                                <?php $__currentLoopData = \App\Models\JenisKesenian::where('parent', $organisasi->jenis_kesenian)->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sub): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($sub->id); ?>" <?php if($organisasi->sub_kesenian == $sub->id): echo 'selected'; endif; ?>>
+                                        <?php echo e($sub->nama); ?>
+
                                     </option>
-                                @endforeach
-                            @endif
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php endif; ?>
                         </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Jumlah Anggota</label>
-                        <input type="number" name="jumlah_anggota" class="form-control" required value="{{ $organisasi->jumlah_anggota ?? '' }}">
+                        <input type="number" name="jumlah_anggota" class="form-control" required value="<?php echo e($organisasi->jumlah_anggota ?? ''); ?>">
                     </div>
                 </div>
 
                 <hr>
 
-                {{-- Alamat --}}
+                
                 <h6 class="fw-bold mb-3">Alamat Sekretariat Organisasi</h6>
                 <div class="row mb-3">
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Kabupaten</label>
                         <select name="kabupaten_kode" id="kabupaten" class="form-select" required>
                             <option value="">-- Pilih Kabupaten --</option>
-                            @foreach($kabupaten as $k)
-                                <option value="{{ $k->kode }}" @selected(isset($organisasi) && $organisasi->kabupaten == $k->nama)>
-                                    {{ $k->nama }}
+                            <?php $__currentLoopData = $kabupaten; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $k): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($k->kode); ?>" <?php if(isset($organisasi) && $organisasi->kabupaten == $k->nama): echo 'selected'; endif; ?>>
+                                    <?php echo e($k->nama); ?>
+
                                 </option>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
                     <div class="col-md-4">
@@ -85,7 +88,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Alamat Lengkap</label>
-                    <textarea name="alamat_lengkap" class="form-control" rows="3" required>{{ $organisasi->alamat ?? '' }}</textarea>
+                    <textarea name="alamat_lengkap" class="form-control" rows="3" required><?php echo e($organisasi->alamat ?? ''); ?></textarea>
                 </div>
 
                 <div class="text-end">
@@ -93,12 +96,12 @@
                 </div>
             </form>
 
-            {{-- Tombol Navigasi --}}
+            
             <div class="d-flex justify-content-between mt-3">
                 <button class="btn btn-secondary prev-tab" data-prev="#tab-perhatian">
                     <i class="fas fa-arrow-left me-2"></i> Kembali
                 </button>
-                <button id="btnNextOrganisasi" class="btn btn-success px-4 next-tab" data-next="#tab-anggota" @disabled(!$organisasi)>
+                <button id="btnNextOrganisasi" class="btn btn-success px-4 next-tab" data-next="#tab-anggota" <?php if(!$organisasi): echo 'disabled'; endif; ?>>
                     Selanjutnya
                 </button>
             </div>
@@ -106,7 +109,7 @@
     </div>
 </div>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -198,10 +201,10 @@ document.addEventListener('DOMContentLoaded', function () {
             data.forEach(i => kec.innerHTML += `<option value="${i.kode}">${i.nama}</option>`);
 
             // Pilih kecamatan lama jika ada
-            @if(isset($organisasi) && $organisasi->kecamatan)
-            const oldKec = "{{ $organisasi->kecamatan }}";
+            <?php if(isset($organisasi) && $organisasi->kecamatan): ?>
+            const oldKec = "<?php echo e($organisasi->kecamatan); ?>";
             [...kec.options].find(o => o.text === oldKec)?.setAttribute('selected', 'selected');
-            @endif
+            <?php endif; ?>
 
             // Trigger change untuk load desa
             kec.dispatchEvent(new Event("change"));
@@ -217,19 +220,20 @@ document.addEventListener('DOMContentLoaded', function () {
             data.forEach(i => desa.innerHTML += `<option value="${i.kode}">${i.nama}</option>`);
 
             // Pilih desa lama jika ada
-            @if(isset($organisasi) && $organisasi->desa)
-            const oldDesa = "{{ $organisasi->desa }}";
+            <?php if(isset($organisasi) && $organisasi->desa): ?>
+            const oldDesa = "<?php echo e($organisasi->desa); ?>";
             [...desa.options].find(o => o.text === oldDesa)?.setAttribute('selected', 'selected');
-            @endif
+            <?php endif; ?>
         });
     });
 
     // Trigger awal untuk populate kecamatan & desa jika ada data lama
-    @if(isset($organisasi) && $organisasi->kabupaten)
+    <?php if(isset($organisasi) && $organisasi->kabupaten): ?>
     kab.dispatchEvent(new Event("change"));
-    @endif
+    <?php endif; ?>
 
 });
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
 
+<?php /**PATH D:\Main\kik-fullstack\resources\views/user/organisasi/create.blade.php ENDPATH**/ ?>

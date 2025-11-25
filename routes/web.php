@@ -55,6 +55,12 @@ Route::prefix('user-kik')->name('user.')->middleware(['auth', 'role:user-kik'])-
     // Daftar
     Route::get('/daftar', [DaftarController::class, 'index'])->name('daftar.index');
 
+    // Route Baru: Untuk kirim data ke admin
+    Route::post('/daftar/submit', [DaftarController::class, 'submit'])->name('daftar.submit');
+
+    // Route Baru: Halaman status selesai/menunggu
+    Route::get('/selesai', [DaftarController::class, 'selesai'])->name('selesai.index');
+
     // Organisasi
     Route::get('/organisasi/create', [OrganisasiController::class, 'create'])->name('organisasi.create');
     Route::post('/organisasi/store', [OrganisasiController::class, 'store'])->name('organisasi.store');

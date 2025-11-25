@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Formulir Permohonan Kartu Induk Kesenian'); ?>
 
-@section('title', 'Formulir Permohonan Kartu Induk Kesenian')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container mt-5">
     <h3 class="fw-bold mb-4">Formulir Permohonan Kartu Induk Kesenian</h3>
 
@@ -51,7 +49,7 @@
                             </p>
 
                             <div class="d-flex justify-content-between mt-3">
-                                <a href="{{ route('user.dashboard') }}" class="btn btn-secondary">
+                                <a href="<?php echo e(route('user.dashboard')); ?>" class="btn btn-secondary">
                                     <i class="fas fa-arrow-left me-2"></i> Kembali
                                 </a>
                                 <div class="text-end">
@@ -67,7 +65,7 @@
                                 <i class="fas fa-info-circle me-2"></i>
                                 <div>Isi informasi dasar mengenai organisasi kesenian Anda.</div>
                             </div>
-                            @include('user.organisasi.create')
+                            <?php echo $__env->make('user.organisasi.create', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
                         </div>
 
                         <div id="tab-anggota" class="tab-pane d-none">
@@ -75,7 +73,7 @@
                                 <i class="fas fa-users me-2"></i>
                                 <div>Masukkan minimal 3 anggota dalam organisasi Anda.</div>
                             </div>
-                            @include('user.anggota.index')
+                            <?php echo $__env->make('user.anggota.index', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
                         </div>
 
                         <div id="tab-inventaris" class="tab-pane d-none">
@@ -83,7 +81,7 @@
                                 <i class="fas fa-box-open me-2"></i>
                                 <div>Isi data inventaris barang yang dimiliki oleh organisasi Anda.</div>
                             </div>
-                            @include('user.inventaris.index')
+                            <?php echo $__env->make('user.inventaris.index', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
                         </div>
 
                         <div id="tab-pendukung" class="tab-pane d-none">
@@ -91,11 +89,11 @@
                                 <i class="fas fa-file-alt me-2"></i>
                                 <div>Unggah dokumen pendukung seperti surat, foto kegiatan, atau dokumen lain yang relevan.</div>
                             </div>
-                            @include('user.pendukung.index')
+                            <?php echo $__env->make('user.pendukung.index', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
                         </div>
 
                         <div id="tab-review" class="tab-pane d-none">
-                            @include('user.review.index')
+                            <?php echo $__env->make('user.review.index', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
                         </div>
 
                     </div>
@@ -106,7 +104,7 @@
 
 </div>
 
-{{-- CSS --}}
+
 <style>
 #form-tabs button {
     border: none;
@@ -143,7 +141,7 @@
 }
 </style>
 
-{{-- SCRIPT TAB --}}
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Cek apakah elemen ada (karena jika status 'Menunggu', tab tidak dirender)
@@ -179,4 +177,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Main\kik-fullstack\resources\views/user/daftar/index.blade.php ENDPATH**/ ?>

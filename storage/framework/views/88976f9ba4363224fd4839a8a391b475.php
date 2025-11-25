@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Dashboard User'); ?>
 
-@section('title', 'Dashboard User')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container mt-5">
     <div class="text-center mb-5">
         <h2 class="fw-bold text-primary mb-3">
@@ -25,7 +23,7 @@
                         <p class="text-muted small mb-4">
                             Ajukan pendaftaran baru untuk mendapatkan Kartu Kesenian.
                         </p>
-                        <a href="{{ route('user.daftar.index') }}" class="btn btn-success w-100">
+                        <a href="<?php echo e(route('user.daftar.index')); ?>" class="btn btn-success w-100">
                             <i class="fas fa-pencil-alt me-2"></i>Mulai Daftar
                         </a>
                     </div>
@@ -33,7 +31,7 @@
             </div>
 
 
-        {{-- Tombol Perpanjangan (selalu ada) --}}
+        
         <div class="col-md-4 mb-4">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body text-center d-flex flex-column justify-content-center">
@@ -42,7 +40,7 @@
                     </div>
                     <h5 class="card-title fw-bold">Perpanjangan Kartu</h5>
                     <p class="text-muted small mb-4">Perpanjang masa berlaku Kartu Identitas Kesenian Anda.</p>
-                      <a href="{{ route('user.perpanjang.index') }}" class="btn btn-primary w-100">
+                      <a href="<?php echo e(route('user.perpanjang.index')); ?>" class="btn btn-primary w-100">
                         <i class="fas fa-redo me-2"></i>Perpanjang Sekarang
                     </a>
                 </div>
@@ -51,4 +49,6 @@
 
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\Main\kik-fullstack\resources\views/dashboard.blade.php ENDPATH**/ ?>
