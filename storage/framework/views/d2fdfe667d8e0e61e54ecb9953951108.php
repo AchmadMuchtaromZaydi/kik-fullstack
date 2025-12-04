@@ -1,19 +1,21 @@
 <div class="container py-4">
 
-    {{-- Flash Message --}}
-    @if(session('success_inventaris'))
+    
+    <?php if(session('success_inventaris')): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        {{ session('success_inventaris') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    @endif
+        <?php echo e(session('success_inventaris')); ?>
 
-    @if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        {{ session('error') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    @endif
+    <?php endif; ?>
+
+    <?php if(session('error')): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <?php echo e(session('error')); ?>
+
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php endif; ?>
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">
@@ -22,22 +24,22 @@
             <p class="text-muted mb-3">
                 Masukkan data inventaris organisasi Anda.<br>
                 <strong>Minimal 5 inventaris</strong> diperlukan.<br>
-                <span id="statusInventaris" class="{{ $inventaris->count() >= 5 ? 'text-success' : 'text-danger' }}">
-                    @if($inventaris->count() >= 5)
+                <span id="statusInventaris" class="<?php echo e($inventaris->count() >= 5 ? 'text-success' : 'text-danger'); ?>">
+                    <?php if($inventaris->count() >= 5): ?>
                         (Batas minimal terpenuhi)
-                    @else
-                        (Saat ini baru {{ $inventaris->count() }})
-                    @endif
+                    <?php else: ?>
+                        (Saat ini baru <?php echo e($inventaris->count()); ?>)
+                    <?php endif; ?>
                 </span>
             </p>
 
-            {{-- Tombol Tambah --}}
-            <button id="btnTambahInventaris" class="btn btn-primary mb-3 {{ $inventaris->count() >= 5 ? 'd-none' : '' }}"
+            
+            <button id="btnTambahInventaris" class="btn btn-primary mb-3 <?php echo e($inventaris->count() >= 5 ? 'd-none' : ''); ?>"
                 data-bs-toggle="modal" data-bs-target="#modalInventaris">
                 <i class="bi bi-plus-circle me-1"></i> Tambah Inventaris
             </button>
 
-            {{-- Tabel --}}
+            
             <div class="table-responsive">
                 <table class="table table-bordered align-middle mb-0">
                     <thead class="table-light text-center">
@@ -52,32 +54,32 @@
                         </tr>
                     </thead>
                     <tbody class="text-center">
-                        @forelse($inventaris as $index => $inv)
+                        <?php $__empty_1 = true; $__currentLoopData = $inventaris; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $inv): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $inv->nama }}</td>
-                            <td>{{ $inv->jumlah }}</td>
-                            <td>{{ $inv->pembelian_th ?? '-' }}</td>
-                            <td>{{ $inv->kondisi }}</td>
-                            <td>{{ $inv->keterangan ?? '-' }}</td>
+                            <td><?php echo e($index + 1); ?></td>
+                            <td><?php echo e($inv->nama); ?></td>
+                            <td><?php echo e($inv->jumlah); ?></td>
+                            <td><?php echo e($inv->pembelian_th ?? '-'); ?></td>
+                            <td><?php echo e($inv->kondisi); ?></td>
+                            <td><?php echo e($inv->keterangan ?? '-'); ?></td>
                             <td>
                                 <button class="btn btn-sm btn-outline-info me-1"
                                     data-bs-toggle="modal"
-                                    data-bs-target="#modalEditInventaris{{ $inv->id }}">
+                                    data-bs-target="#modalEditInventaris<?php echo e($inv->id); ?>">
                                     <i class="bi bi-pencil"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger"
                                     data-bs-toggle="modal"
-                                    data-bs-target="#modalDeleteInventaris{{ $inv->id }}">
+                                    data-bs-target="#modalDeleteInventaris<?php echo e($inv->id); ?>">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </td>
                         </tr>
-                        @empty
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
                             <td colspan="7">Belum ada data inventaris.</td>
                         </tr>
-                        @endforelse
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -87,7 +89,7 @@
                     <i class="fas fa-arrow-left me-2"></i> Kembali
                 </button>
                 <button id="btnNextInventaris" class="btn btn-primary px-4 next-tab" data-next="#tab-pendukung"
-                    @if($inventaris->count() < 5) disabled @endif>
+                    <?php if($inventaris->count() < 5): ?> disabled <?php endif; ?>>
                     Selanjutnya
                 </button>
             </div>
@@ -95,7 +97,7 @@
     </div>
 </div>
 
-{{-- Modal Tambah Inventaris --}}
+
 <div class="modal fade" id="modalInventaris" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow rounded-3">
@@ -103,8 +105,8 @@
                 <h5 class="modal-title">Tambah Inventaris</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('user.inventaris.store') }}" method="POST">
-                @csrf
+            <form action="<?php echo e(route('user.inventaris.store')); ?>" method="POST">
+                <?php echo csrf_field(); ?>
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -119,9 +121,9 @@
                             <label>Tahun Pembelian</label>
                             <select name="pembelian_th" class="form-select">
                                 <option value="">Pilih Tahun</option>
-                                @for ($year = now()->year; $year >= 1990; $year--)
-                                    <option value="{{ $year }}">{{ $year }}</option>
-                                @endfor
+                                <?php for($year = now()->year; $year >= 1990; $year--): ?>
+                                    <option value="<?php echo e($year); ?>"><?php echo e($year); ?></option>
+                                <?php endfor; ?>
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -148,49 +150,49 @@
     </div>
 </div>
 
-{{-- Modal Edit & Delete --}}
-@foreach($inventaris as $inv)
-    {{-- Modal Edit --}}
-    <div class="modal fade" id="modalEditInventaris{{ $inv->id }}" tabindex="-1">
+
+<?php $__currentLoopData = $inventaris; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $inv): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+    
+    <div class="modal fade" id="modalEditInventaris<?php echo e($inv->id); ?>" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 shadow rounded-3">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Inventaris</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="{{ route('user.inventaris.update', $inv->id) }}" method="POST">
-                    @csrf
-                    @method('PUT')
+                <form action="<?php echo e(route('user.inventaris.update', $inv->id)); ?>" method="POST">
+                    <?php echo csrf_field(); ?>
+                    <?php echo method_field('PUT'); ?>
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label>Nama</label>
-                                <input type="text" name="nama" value="{{ $inv->nama }}" class="form-control" required>
+                                <input type="text" name="nama" value="<?php echo e($inv->nama); ?>" class="form-control" required>
                             </div>
                             <div class="col-md-3">
                                 <label>Jumlah</label>
-                                <input type="number" name="jumlah" value="{{ $inv->jumlah }}" class="form-control" min="1" required>
+                                <input type="number" name="jumlah" value="<?php echo e($inv->jumlah); ?>" class="form-control" min="1" required>
                             </div>
                             <div class="col-md-3">
                                 <label>Tahun Pembelian</label>
                                 <select name="pembelian_th" class="form-select">
                                     <option value="">Pilih Tahun</option>
-                                    @for ($year = now()->year; $year >= 1990; $year--)
-                                        <option value="{{ $year }}" {{ $inv->pembelian_th == $year ? 'selected' : '' }}>{{ $year }}</option>
-                                    @endfor
+                                    <?php for($year = now()->year; $year >= 1990; $year--): ?>
+                                        <option value="<?php echo e($year); ?>" <?php echo e($inv->pembelian_th == $year ? 'selected' : ''); ?>><?php echo e($year); ?></option>
+                                    <?php endfor; ?>
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label>Kondisi</label>
                                 <select name="kondisi" class="form-select" required>
-                                    <option value="Baru" {{ $inv->kondisi == 'Baru' ? 'selected' : '' }}>Baru</option>
-                                    <option value="Bekas" {{ $inv->kondisi == 'Bekas' ? 'selected' : '' }}>Bekas</option>
-                                    <option value="Rusak" {{ $inv->kondisi == 'Rusak' ? 'selected' : '' }}>Rusak</option>
+                                    <option value="Baru" <?php echo e($inv->kondisi == 'Baru' ? 'selected' : ''); ?>>Baru</option>
+                                    <option value="Bekas" <?php echo e($inv->kondisi == 'Bekas' ? 'selected' : ''); ?>>Bekas</option>
+                                    <option value="Rusak" <?php echo e($inv->kondisi == 'Rusak' ? 'selected' : ''); ?>>Rusak</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label>Keterangan</label>
-                                <input type="text" name="keterangan" value="{{ $inv->keterangan }}" class="form-control">
+                                <input type="text" name="keterangan" value="<?php echo e($inv->keterangan); ?>" class="form-control">
                             </div>
                         </div>
                     </div>
@@ -203,19 +205,19 @@
         </div>
     </div>
 
-    {{-- Modal Delete --}}
-    <div class="modal fade" id="modalDeleteInventaris{{ $inv->id }}" tabindex="-1">
+    
+    <div class="modal fade" id="modalDeleteInventaris<?php echo e($inv->id); ?>" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow rounded-3">
                 <div class="modal-header">
                     <h5 class="modal-title">Hapus Inventaris</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="{{ route('user.inventaris.destroy', $inv->id) }}" method="POST">
-                    @csrf
-                    @method('DELETE')
+                <form action="<?php echo e(route('user.inventaris.destroy', $inv->id)); ?>" method="POST">
+                    <?php echo csrf_field(); ?>
+                    <?php echo method_field('DELETE'); ?>
                     <div class="modal-body">
-                        Apakah Anda yakin ingin menghapus inventaris <strong>{{ $inv->nama }}</strong>?
+                        Apakah Anda yakin ingin menghapus inventaris <strong><?php echo e($inv->nama); ?></strong>?
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -225,16 +227,16 @@
             </div>
         </div>
     </div>
-@endforeach
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-{{-- ================================================ --}}
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
     // ===============================
     // 1) Auto pindah ke tab Inventaris jika session('tab') = 'inventaris'
     // ===============================
-    if(@json(session('tab')) === 'inventaris') {
+    if(<?php echo json_encode(session('tab'), 15, 512) ?> === 'inventaris') {
         const tabButtons = document.querySelectorAll('#form-tabs button');
         const tabPanes   = document.querySelectorAll('.tab-pane');
 
@@ -257,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnTambah = document.getElementById("btnTambahInventaris");
     if(!btnTambah) return;
 
-    window.jumlahInventaris = {{ $inventaris->count() }};
+    window.jumlahInventaris = <?php echo e($inventaris->count()); ?>;
 
     const statusText = document.getElementById('statusInventaris');
     const nextBtn    = document.getElementById('btnNextInventaris');
@@ -314,4 +316,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 </script>
-{{-- ================================================ --}}
+
+<?php /**PATH D:\New Code\kik-fullstack\resources\views/user/inventaris/index.blade.php ENDPATH**/ ?>

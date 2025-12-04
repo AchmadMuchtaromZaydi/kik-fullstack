@@ -78,6 +78,7 @@ Route::prefix('user-kik')->name('user.')->middleware(['auth', 'role:user-kik'])-
     Route::put('/anggota/{id}', [DataAnggotaController::class, 'update'])->name('anggota.update');
     Route::delete('/anggota/{id}', [DataAnggotaController::class, 'destroy'])->name('anggota.destroy');
 
+
     //inventaris
     Route::get('/inventaris', [InventarisController::class, 'index'])->name('inventaris.index');
     Route::post('/inventaris', [InventarisController::class, 'store'])->name('inventaris.store');

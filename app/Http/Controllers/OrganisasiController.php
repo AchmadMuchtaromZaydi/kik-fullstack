@@ -116,6 +116,7 @@ class OrganisasiController extends Controller
      return response()->json([
     'success_organisasi' => true,
     'message' => 'Data organisasi berhasil disimpan!',
+    'jumlah_anggota' => $organisasi->jumlah_anggota
 ]);
 }
 }
