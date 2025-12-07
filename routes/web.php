@@ -12,6 +12,7 @@ use App\Http\Controllers\KesenianController;
 use App\Http\Controllers\ValidasiController;
 use App\Http\Controllers\InventarisController;
 use App\Http\Controllers\OrganisasiController;
+use App\Http\Controllers\PerpanjangController;
 use App\Http\Controllers\VerifikasiController;
 use App\Http\Controllers\DataAnggotaController;
 use App\Http\Controllers\DataPendukungController;
@@ -55,10 +56,10 @@ Route::prefix('user-kik')->name('user.')->middleware(['auth', 'role:user-kik'])-
     // Daftar
     Route::get('/daftar', [DaftarController::class, 'index'])->name('daftar.index');
 
-    // Route Baru: Untuk kirim data ke admin
+   // 2. Action Kirim Data ke Admin (Tombol di halaman Review)
     Route::post('/daftar/submit', [DaftarController::class, 'submit'])->name('daftar.submit');
 
-    // Route Baru: Halaman status selesai/menunggu
+    // 3. Halaman Status (Menunggu / Ditolak / Selesai)
     Route::get('/selesai', [DaftarController::class, 'selesai'])->name('selesai.index');
 
     // Organisasi

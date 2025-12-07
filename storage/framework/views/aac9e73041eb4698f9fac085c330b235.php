@@ -1,18 +1,16 @@
-{{-- resources/views/user/selesai/index.blade.php --}}
+ 
 
-@extends('layouts.app') {{-- Sesuaikan dengan layout utama Anda --}}
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-5 text-center">
 
-                    {{-- ================================================= --}}
-                    {{-- KASUS 1: MENUNGGU VERIFIKASI (Pending) --}}
-                    {{-- ================================================= --}}
-                    @if($verifikasi && $verifikasi->status == 'Menunggu Verifikasi')
+                    
+                    
+                    
+                    <?php if($verifikasi && $verifikasi->status == 'Menunggu Verifikasi'): ?>
 
                         <div class="mb-4 text-warning">
                             <i class="fas fa-clock fa-5x"></i>
@@ -26,16 +24,16 @@
                             <small><i class="fas fa-info-circle me-1"></i> <strong>Note:</strong> Proses ini biasanya memakan waktu 1x24 jam kerja. Silakan cek halaman ini secara berkala.</small>
                         </div>
                         <div class="mt-4">
-                            <a href="{{ route('user.dashboard') }}" class="btn btn-outline-secondary">
+                            <a href="<?php echo e(route('user.dashboard')); ?>" class="btn btn-outline-secondary">
                                 <i class="fas fa-home me-2"></i> Kembali ke Dashboard
                             </a>
                         </div>
 
 
-                    {{-- ================================================= --}}
-                    {{-- KASUS 2: DITOLAK (Perlu Revisi) --}}
-                    {{-- ================================================= --}}
-                    @elseif($verifikasi && $verifikasi->status == 'Ditolak')
+                    
+                    
+                    
+                    <?php elseif($verifikasi && $verifikasi->status == 'Ditolak'): ?>
 
                         <div class="mb-4 text-danger">
                             <i class="fas fa-exclamation-circle fa-5x"></i>
@@ -45,26 +43,27 @@
                             Mohon maaf, data Anda belum dapat disetujui karena terdapat kekurangan atau kesalahan.
                         </p>
 
-                        {{-- Tampilkan Catatan Admin --}}
-                        @if($verifikasi->catatan)
+                        
+                        <?php if($verifikasi->catatan): ?>
                             <div class="alert alert-danger mt-3 text-start">
                                 <strong><i class="fas fa-clipboard-list me-2"></i> Catatan Admin:</strong><br>
-                                {{ $verifikasi->catatan }}
+                                <?php echo e($verifikasi->catatan); ?>
+
                             </div>
-                        @endif
+                        <?php endif; ?>
 
                         <div class="mt-4">
-                            {{-- Tombol ini mengarah kembali ke form daftar untuk edit --}}
-                            <a href="{{ route('user.daftar.index') }}" class="btn btn-warning px-4 fw-bold">
+                            
+                            <a href="<?php echo e(route('user.daftar.index')); ?>" class="btn btn-warning px-4 fw-bold">
                                 <i class="fas fa-edit me-2"></i> Perbaiki Data Sekarang
                             </a>
                         </div>
 
 
-                    {{-- ================================================= --}}
-                    {{-- KASUS 3: DISETUJUI (Approved / Allow) --}}
-                    {{-- ================================================= --}}
-                    @elseif($verifikasi && $verifikasi->status == 'Approved')
+                    
+                    
+                    
+                    <?php elseif($verifikasi && $verifikasi->status == 'Approved'): ?>
 
                         <div class="mb-4 text-success">
                             <i class="fas fa-check-circle fa-5x"></i>
@@ -76,20 +75,18 @@
                         </p>
 
                         <div class="mt-4 d-flex justify-content-center gap-2">
-                            <a href="{{ route('user.dashboard') }}" class="btn btn-primary px-4">
+                            <a href="<?php echo e(route('user.dashboard')); ?>" class="btn btn-primary px-4">
                                 <i class="fas fa-tachometer-alt me-2"></i> Dashboard
                             </a>
-                            {{-- Jika ada fitur cetak kartu --}}
-                            {{-- <a href="#" class="btn btn-outline-success px-4">
-                                <i class="fas fa-print me-2"></i> Cetak Kartu
-                            </a> --}}
+                            
+                            
                         </div>
 
 
-                    {{-- ================================================= --}}
-                    {{-- KASUS DEFAULT (Belum ada data verifikasi) --}}
-                    {{-- ================================================= --}}
-                    @else
+                    
+                    
+                    
+                    <?php else: ?>
 
                         <div class="mb-4 text-primary">
                             <i class="fas fa-file-alt fa-5x"></i>
@@ -100,16 +97,18 @@
                             Silakan lengkapi form pendaftaran terlebih dahulu.
                         </p>
                         <div class="mt-4">
-                            <a href="{{ route('user.daftar.index') }}" class="btn btn-primary px-4">
+                            <a href="<?php echo e(route('user.daftar.index')); ?>" class="btn btn-primary px-4">
                                 <i class="fas fa-pen me-2"></i> Isi Formulir
                             </a>
                         </div>
 
-                    @endif
+                    <?php endif; ?>
 
                 </div>
             </div>
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH D:\New Code\kik-fullstack\resources\views/user/selesai/index.blade.php ENDPATH**/ ?>
